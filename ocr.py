@@ -92,6 +92,9 @@ _WORK_STRIP_H = 220
 # real badge proportions; see the note in _glyph_boxes.
 _MIN_GLYPH_H_FRAC = 0.06
 _MIN_GLYPH_AREA = 12
+# Glyphs further apart than this (relative to glyph height) are separate
+# tokens, not one number. Separates the hook icon from the badge digits.
+_WORD_GAP_FRAC = 0.45
 # Below this confidence a read is evidence, not fact. Real spawns produced
 # 93% low-confidence reads against 3% on synthetic cards, and those shaky
 # reads were driving "take both" -- so the number is load-bearing, not
@@ -191,8 +194,30 @@ def _inset(box, frac: float = 0.18):
     return (x + dx, y + dy, max(1, w - 2 * dx), max(1, h - 2 * dy))
 
 
+def _split_on_gaps(line, gap_frac: float = _WORD_GAP_FRAC):
+    """Split a row of glyphs wherever the horizontal gap gets wide.
+
+    Sharing a row does not make two things one token. Every real card puts a
+    hook icon immediately left of the badge at exactly the badge's height, so
+    row-grouping alone swept it into the same crop as the digits -- which is
+    how a badge came back as '4 1655 7'. Digits inside a number sit close
+    together; the icon sits a clear gap away, so the gap separates them.
+    """
+    line = sorted(line, key=lambda b: b[0])
+    med_h = sorted(b[3] for b in line)[len(line) // 2]
+    groups, cur = [], [line[0]]
+    for prev, b in zip(line, line[1:]):
+        if b[0] - (prev[0] + prev[2]) > gap_frac * med_h:
+            groups.append(cur)
+            cur = [b]
+        else:
+            cur.append(b)
+    groups.append(cur)
+    return groups
+
+
 def _group_lines(boxes, tol: float = 0.5) -> list[tuple[int, int, int, int]]:
-    """Cluster glyph boxes that share a horizontal band into line bboxes."""
+    """Cluster glyph boxes into tokens: same row, and not split by a wide gap."""
     lines: list[list[tuple[int, int, int, int]]] = []
     for b in sorted(boxes, key=lambda x: x[1]):
         placed = False
@@ -205,13 +230,15 @@ def _group_lines(boxes, tol: float = 0.5) -> list[tuple[int, int, int, int]]:
                 break
         if not placed:
             lines.append([b])
+
     out = []
     for ln in lines:
-        x0 = min(o[0] for o in ln)
-        y0 = min(o[1] for o in ln)
-        x1 = max(o[0] + o[2] for o in ln)
-        y1 = max(o[1] + o[3] for o in ln)
-        out.append(((x0, y0, x1 - x0, y1 - y0), ln))
+        for grp in _split_on_gaps(ln):
+            x0 = min(o[0] for o in grp)
+            y0 = min(o[1] for o in grp)
+            x1 = max(o[0] + o[2] for o in grp)
+            y1 = max(o[1] + o[3] for o in grp)
+            out.append(((x0, y0, x1 - x0, y1 - y0), grp))
     return out
 
 
@@ -301,6 +328,10 @@ def _read_badge_pass(card_bgr: np.ndarray, narrow: bool) -> dict:
         # enclose nothing, so they stop competing -- they were being read as
         # "2" over a real "E" -- and each one skipped is a tesseract spawn
         # saved. Only with no plate at all do we fall back to open search.
+        # Restricting to the rightmost token was tried and reverted: on the
+        # ornate frame a corner orb sits further right than the badge, so the
+        # rule picked decoration and broke every E card. Position alone does
+        # not identify the badge; the plate does.
         lines = _group_lines(glyphs)
         if plates:
             inside = [(box, 1.0) for box, _ in lines if _within_any(box, plates)]

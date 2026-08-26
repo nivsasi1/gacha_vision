@@ -77,6 +77,20 @@ def draw_card(
         cv2.rectangle(img, (thickness, h - thickness - 14),
                       (w - thickness, h - thickness), (238, 226, 240), -1)
 
+    # The hook icon that sits immediately left of the badge on every real
+    # card, sharing its row. Present in the fixtures because it is the single
+    # thing that broke badge reading in the field: it is fixed art, so it
+    # OCRs to the same glyph every time, and being on the badge's row it was
+    # swept into the same crop as the digits.
+    hook_h = max(6, int(badge_h * 0.62))
+    hx = w - int(badge_h * 1.85) - int(min(w, h) * 0.11) - 8 - int(hook_h * 1.5)
+    hy = int(min(w, h) * 0.11) + 8 + (badge_h - hook_h) // 2
+    cv2.line(img, (hx + hook_h // 2, hy), (hx + hook_h // 2, hy + hook_h),
+             (235, 235, 240), max(1, hook_h // 7), cv2.LINE_AA)
+    cv2.ellipse(img, (hx + hook_h // 2, hy + max(2, hook_h // 5)),
+                (max(2, hook_h // 3), max(2, hook_h // 4)), 0, 180, 360,
+                (235, 235, 240), max(1, hook_h // 7), cv2.LINE_AA)
+
     # Badge: dark plate near the top-right with the print number (or E).
     # badge_h is a knob because the real cards wear a much smaller badge than
     # the first synthetic ones did, and that difference turned out to matter.
