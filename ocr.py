@@ -376,7 +376,19 @@ def _read_badge_pass(card_bgr: np.ndarray, narrow: bool) -> dict:
     if not votes:
         return {"print_no": None, "no_number": False, "confidence": 0.0, "text": text}
 
-    best = max(votes, key=votes.get)
+    # A lone single digit competing against an explicit 'E' loses.
+    #
+    # From 182 labelled real cards: every E misread as a number came back as
+    # ONE digit (13 of 14 were a bare '4' or '7'), and several raw reads were
+    # literally '4 E' or '7 E' -- the E was seen and outvoted. That single
+    # digit is the hook icon, which produces exactly one glyph. The rule is
+    # deliberately narrow: multi-digit reads are untouched, and a genuine
+    # single-digit print is only ever displaced when an E was ALSO read on
+    # the same badge, which a numbered badge does not do.
+    if "E" in votes and all(len(k) == 1 for k in votes if k != "E"):
+        best = "E"
+    else:
+        best = max(votes, key=votes.get)
     # Confidence reflects both how sure Tesseract was and how much the
     # candidates agreed -- a split vote is exactly what should be reviewed.
     share = votes[best] / sum(votes.values())
