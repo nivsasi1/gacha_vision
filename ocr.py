@@ -78,6 +78,8 @@ BADGE_STRIP = 0.25          # fraction of card height searched for the badge
 # glyph-shaped components to bury a small badge and to cost a tesseract
 # spawn each.
 BADGE_LEFT_EDGE = 0.42
+# The fallback pass searches this much of the card height, full width.
+BADGE_STRIP_WIDE = 0.32
 # The strip is resampled to this height before anything is measured, so the
 # fraction-based filters below mean the same thing on a 200px card and a
 # 900px one. Without it the filters were implicitly tuned to one card size:
@@ -255,10 +257,27 @@ def read_badge(card_bgr: np.ndarray) -> dict:
 
     ``print_no`` is int or None. ``no_number`` is True only for a clean 'E'
     read with no digits anywhere -- never as a fallback for failed OCR.
+
+    Two passes. The narrow one looks only at the top-right, where the badge
+    sits on every card seen so far, which keeps the frame's decoration out of
+    the way. If that finds nothing at all, the wide pass searches the whole
+    top of the card. Narrowing alone tripled the unreadable count on a real
+    folder -- some badges simply fall outside the tight window -- and this
+    ladder cannot lose a read relative to searching wide, while still
+    preferring the clean answer when the tight window has one.
     """
+    for narrow in (True, False):
+        got = _read_badge_pass(card_bgr, narrow)
+        if got["print_no"] is not None or got["no_number"]:
+            return got
+    return got
+
+
+def _read_badge_pass(card_bgr: np.ndarray, narrow: bool) -> dict:
     h, w = card_bgr.shape[:2]
-    x0 = int(BADGE_LEFT_EDGE * w)
-    strip = card_bgr[0:max(4, int(BADGE_STRIP * h)), x0:]
+    x0 = int(BADGE_LEFT_EDGE * w) if narrow else 0
+    strip_frac = BADGE_STRIP if narrow else BADGE_STRIP_WIDE
+    strip = card_bgr[0:max(4, int(strip_frac * h)), x0:]
     gray = _normalise_strip(cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY))
     sw = gray.shape[1]
 
