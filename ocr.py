@@ -34,6 +34,16 @@ _NAME_CFG = "--oem 3 --psm 6"
 
 BADGE_STRIP = 0.32          # fraction of card height searched for the badge
 _MIN_TOKEN_CONF = 4.0       # weight for a token Tesseract emitted but did not score
+# pytesseract shells out to the tesseract binary, so every candidate crop
+# costs a process spawn. Once a trustworthy glyph crop has produced a numeric
+# read this confident, more candidates only cost time.
+_EARLY_EXIT_CONF = 85.0
+# An 'E' badge never trips the numeric early exit -- Tesseract is chronically
+# unconfident about it -- so without a cap those cards scan every candidate of
+# every mask and cost ~6x a numeric read. Candidates are ordered best-first
+# (tight glyph crops before plate interiors), so a cap drops the weakest
+# evidence, not the decisive kind.
+_MAX_CANDIDATES = 8
 
 
 def _masks(gray: np.ndarray) -> list[np.ndarray]:
@@ -143,8 +153,10 @@ def _ocr_crop(gray_crop: np.ndarray) -> list[tuple[str, float]]:
         toks = [(t.strip(), _conf(c)) for t, c in zip(data["text"], data["conf"]) if t.strip()]
         if not toks:
             continue
-        results.append(("".join(t for t, _ in toks),
-                        sum(c for _, c in toks) / len(toks)))
+        conf = sum(c for _, c in toks) / len(toks)
+        results.append(("".join(t for t, _ in toks), conf))
+        if conf >= _EARLY_EXIT_CONF:
+            break                       # a confident read; other modes add nothing
     return results
 
 
@@ -164,7 +176,10 @@ def read_badge(card_bgr: np.ndarray) -> dict:
     best_conf: dict[str, float] = {}    # label -> best raw Tesseract confidence
     raw: list[str] = []
 
+    done = False
     for mask in _masks(gray):
+        if done:
+            break
         plates, glyphs = _partition_boxes(_glyph_boxes(mask))
         # A tight crop around real character components is far more
         # trustworthy than a plate interior, which may still catch border
@@ -180,6 +195,9 @@ def read_badge(card_bgr: np.ndarray) -> dict:
             if key in seen_boxes:
                 continue
             seen_boxes.add(key)
+            if len(seen_boxes) > _MAX_CANDIDATES:
+                done = True
+                break
             pad = max(3, bh // 5)
             crop = gray[max(0, y - pad):y + bh + pad, max(0, x - pad):x + bw + pad]
             # Badges sit toward the top-right; nudge those candidates up.
@@ -193,6 +211,14 @@ def read_badge(card_bgr: np.ndarray) -> dict:
                     w = conf * len(lab) * side_bonus * src_weight
                     votes[lab] = votes.get(lab, 0.0) + w
                     best_conf[lab] = max(best_conf.get(lab, 0.0), conf)
+
+            # Stop only on a confident read from a tight glyph crop -- plate
+            # interiors are the contaminated source and never end the search.
+            if src_weight >= 1.0 and votes:
+                lead = max(votes, key=votes.get)
+                if best_conf.get(lead, 0.0) >= _EARLY_EXIT_CONF:
+                    done = True
+                    break
 
     text = " ".join(dict.fromkeys(raw))[:60]
     if not votes:

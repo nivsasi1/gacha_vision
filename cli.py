@@ -1,6 +1,9 @@
 """Command line entry point.
 
     python -m gacha_vision analyze  shot.png [--watchlist wl.json] [--json]
+    python -m gacha_vision batch    shots/ [--out report.csv] [--workers 8]
+    python -m gacha_vision extract  shots/ --out crops/      # + labelling sheet
+    python -m gacha_vision fit      labels.csv               # tune thresholds
     python -m gacha_vision demo     [--out DIR]
     python -m gacha_vision calibrate shot.png [--expected 2]
 """
@@ -13,6 +16,8 @@ import sys
 from pathlib import Path
 
 from .analyze import analyze_cards, analyze_spawn, load_image
+from .batch import CSV_FIELDS, analyze_folder, summarize, write_csv
+from .calibrate import build_sheet, fit_thresholds, ocr_report, read_csv
 from .config import Policy, load_policy, load_watchlist
 from .models import FrameTier
 from .rank import decide
@@ -112,6 +117,111 @@ def cmd_demo(a: argparse.Namespace) -> int:
     return 0
 
 
+def _progress(i, n):
+    if i == n or i % 10 == 0:
+        print(f"  ...{i}/{n}", flush=True)
+
+
+def _run_batch(a, crop_dir=None):
+    policy = load_policy(a.policy)
+    watchlist = load_watchlist(getattr(a, "watchlist", None))
+    print(f"scanning {a.folder} ...")
+    results = analyze_folder(
+        a.folder, policy, watchlist,
+        expected=a.expected, layout=a.layout,
+        read_names=not a.no_names, workers=a.workers,
+        crop_dir=crop_dir, progress=_progress,
+    )
+    if not results:
+        print(f"no images found under {a.folder}")
+        return None, None
+    return results, summarize(results)
+
+
+def _print_summary(s):
+    print(f"\nimages: {s['images']}   cards: {s['cards']}   failed: {s['failed']}")
+    if s["actions"]:
+        print("decisions: " + "  ".join(f"{k}={v}" for k, v in sorted(s["actions"].items())))
+    if s["frames"]:
+        print("frames:    " + "  ".join(f"{k}={v}" for k, v in sorted(s["frames"].items())))
+    print(f"E cards: {s['e_cards']}   unreadable: {s['unreadable_cards']}   "
+          f"low-confidence: {s['low_ocr_cards']}")
+    if s["flagged_images"]:
+        print(f"flagged for review: {s['flagged_images']} image(s)")
+    for name, err in s["errors"]:
+        print(f"  ERROR {name}: {err}")
+
+
+def cmd_batch(a: argparse.Namespace) -> int:
+    results, s = _run_batch(a)
+    if not results:
+        return 1
+    n = write_csv(results, a.out)
+    _print_summary(s)
+    print(f"\nwrote {n} card rows -> {a.out}")
+    print("send that CSV over to calibrate thresholds; the images can stay put.")
+    return 0
+
+
+def cmd_extract(a: argparse.Namespace) -> int:
+    out = Path(a.out)
+    results, s = _run_batch(a, crop_dir=out)
+    if not results:
+        return 1
+    csv_path = out / "manifest.csv"
+    n = write_csv(results, csv_path)
+    rows = [r for res in results for r in res.rows]
+    sheet = out / "sheet.html"
+    build_sheet(rows, sheet, CSV_FIELDS)
+    _print_summary(s)
+    print(f"\n{n} crops + manifest.csv -> {out}/")
+    print(f"open {sheet} in a browser, fix the labels, hit Download labels.csv")
+    print("then: python -m gacha_vision fit labels.csv")
+    return 0
+
+
+def cmd_fit(a: argparse.Namespace) -> int:
+    rows = read_csv(a.csv)
+    print(f"\n{len(rows)} rows from {a.csv}")
+
+    fit = fit_thresholds(rows, feature=a.feature)
+    print(f"\n-- frame thresholds ({fit['feature']}) --")
+    print("labelled: " + "  ".join(f"{k}={v}" for k, v in fit["counts"].items()))
+    if fit["labelled"] < 4:
+        print("  not enough labelled rows; fill in true_frame and re-run")
+    else:
+        for sp in fit["splits"]:
+            if sp.get("threshold") is None:
+                print(f"  {sp['boundary']:<20} -- {sp.get('note','')}")
+            else:
+                print(f"  {sp['boundary']:<20} cut={sp['threshold']:<8} "
+                      f"acc={sp['accuracy']:.0%}  (n={sp['n']})")
+        print(f"  overall: {fit.get('overall_accuracy', 0):.0%}")
+        print("\n  paste into gacha_vision/frame.py:\n")
+        print("  THRESHOLDS = {")
+        for tier in ("uncommon", "rare", "holo"):
+            if tier in fit["thresholds"]:
+                print(f"      FrameTier.{tier.upper()}: {fit['thresholds'][tier]},")
+        print("  }")
+
+    o = ocr_report(rows)
+    print(f"\n-- badge OCR --")
+    if not o["checked"]:
+        print("  no true_print labels found; fill them in to measure OCR")
+    else:
+        print(f"  {o['correct']}/{o['checked']} = {o['accuracy']:.0%}")
+        print(f"  number read as E: {o['number_read_as_E']}   "
+              f"E read as number: {o['E_read_as_number']}   (these are the costly ones)")
+        print(f"  mean confidence: correct={o['mean_conf_correct']}  wrong={o['mean_conf_wrong']}")
+        if o["misses"]:
+            print("\n  misses:")
+            for m in o["misses"]:
+                print(f"    {m['image']} slot{m['slot']}: want {m['want']:<6} got {m['got']:<6} "
+                      f"conf={m['conf']:.2f} raw={m['raw']!r}")
+    print()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="gacha_vision", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -134,6 +244,32 @@ def build_parser() -> argparse.ArgumentParser:
     c = sub.add_parser("calibrate", help="dump frame features for threshold tuning")
     common(c)
     c.set_defaults(func=cmd_calibrate)
+
+    def folder_args(sp):
+        sp.add_argument("folder", help="directory of screenshots (searched recursively)")
+        sp.add_argument("--expected", type=int, default=None)
+        sp.add_argument("--layout", choices=["auto", "columns"], default="auto")
+        sp.add_argument("--watchlist", default=None)
+        sp.add_argument("--policy", default=None)
+        sp.add_argument("--workers", type=int, default=None,
+                        help="parallel processes (default 1; >1 falls back to "
+                             "serial if the pool cannot start)")
+        sp.add_argument("--no-names", action="store_true")
+
+    b = sub.add_parser("batch", help="score a whole folder into a CSV")
+    folder_args(b)
+    b.add_argument("--out", default="report.csv")
+    b.set_defaults(func=cmd_batch)
+
+    e = sub.add_parser("extract", help="crop cards + build a labelling sheet")
+    folder_args(e)
+    e.add_argument("--out", default="crops")
+    e.set_defaults(func=cmd_extract)
+
+    f = sub.add_parser("fit", help="fit thresholds from a labelled CSV")
+    f.add_argument("csv")
+    f.add_argument("--feature", default="rarity_index")
+    f.set_defaults(func=cmd_fit)
 
     d = sub.add_parser("demo", help="render synthetic spawns and score them")
     d.add_argument("--out", default="gacha_vision/samples")

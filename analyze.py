@@ -34,14 +34,20 @@ def split_name(raw: str) -> tuple[str, str]:
     return raw.strip(), ""
 
 
-def analyze_cards(
+def analyze_cards_with_boxes(
     bgr: np.ndarray,
     expected: int | None = None,
     layout: str = "auto",
     read_names: bool = True,
-) -> list[Card]:
+) -> tuple[list[Card], list[tuple[int, int, int, int]]]:
+    """Same as :func:`analyze_cards` but also returns the crop boxes.
+
+    Callers that need the pixels back -- the calibration extractor, mainly --
+    should not have to re-run segmentation to get them.
+    """
+    boxes = find_cards(bgr, expected, layout)
     cards: list[Card] = []
-    for i, (x, y, w, h) in enumerate(find_cards(bgr, expected, layout), start=1):
+    for i, (x, y, w, h) in enumerate(boxes, start=1):
         crop = bgr[y:y + h, x:x + w]
         badge = read_badge(crop)
         tier, feats = classify_frame(crop)
@@ -61,7 +67,16 @@ def analyze_cards(
                 frame_features=feats,
             )
         )
-    return cards
+    return cards, boxes
+
+
+def analyze_cards(
+    bgr: np.ndarray,
+    expected: int | None = None,
+    layout: str = "auto",
+    read_names: bool = True,
+) -> list[Card]:
+    return analyze_cards_with_boxes(bgr, expected, layout, read_names)[0]
 
 
 def analyze_spawn(

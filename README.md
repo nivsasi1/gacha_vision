@@ -66,6 +66,38 @@ cards, decision = analyze_spawn("shot.png", policy=Policy(), expected=2)
 print(decision.action, decision.slots)
 ```
 
+## Calibrating against real screenshots
+
+The thresholds shipped here were fitted to synthetic cards. Real frames and a
+real game font will land somewhere else, so there is a loop for correcting
+them — and it never requires moving your screenshots anywhere.
+
+```bash
+# 1. crop every card and build a labelling page
+python -m gacha_vision extract shots/ --out crops/
+
+# 2. open crops/sheet.html, fix whatever it got wrong, Download labels.csv
+#    (every field is prefilled with what the pipeline read, so most cards
+#     need no touching — you are correcting, not transcribing)
+
+# 3. fit thresholds to your labels
+python -m gacha_vision fit labels.csv
+```
+
+`fit` prints a ready-to-paste `THRESHOLDS` block, the accuracy of each cut
+point, and an OCR report that separates the two errors worth caring about:
+a numbered card read as `E`, and an `E` read as a number.
+
+To score a folder without labelling anything:
+
+```bash
+python -m gacha_vision batch shots/ --out report.csv
+```
+
+Both commands write a CSV carrying every measurement the classifier used, so
+the CSV alone is enough to tune thresholds — the images can stay on your
+machine.
+
 ## Tuning
 
 `config.py` holds every threshold worth arguing about — component weights,
@@ -83,12 +115,12 @@ in that show. Fame ≥ `must_claim_fame` (default 90) forces a claim.
 
 | stage | file | approach |
 |---|---|---|
-| find cards | `segment.py` | contour detection for portrait rectangles, with an equal-column fallback |
+| find cards | `segment.py` | gutter projection, falling back to contours then equal columns |
 | read the badge | `ocr.py` | component analysis → tight glyph crops → Tesseract, confidence-weighted vote |
 | frame rarity | `frame.py` | hue entropy + perplexity + saturation of the border ring |
 | decide | `rank.py` | weighted score per card, then the policy rules |
 
-Three findings shaped this code, each caught by measurement rather than
+Five findings shaped this code, each caught by measurement rather than
 assumption:
 
 * **The badge plate must be separated from its glyphs.** OCR-ing the plate
@@ -101,6 +133,17 @@ assumption:
   spreads ~5.6% into each of 18 buckets and clears a 6% cut-off *less* often
   than a coarse 5-hue frame, which ranked `rare` above `holo`. Perplexity
   (`exp(entropy)`) is monotonic and fixed it.
+* **Cards are found by their gutters, not their outlines.** A common frame is
+  grey and low-contrast, so Canny returns fragments of the artwork and no
+  closed card boundary — an all-common spawn collapsed into a single box.
+  The flat background *between* cards is unmistakable, so splitting on
+  low-variance columns finds every card instead.
+* **Parallelism is opt-in for a reason.** `fork` deadlocks (OpenCV and
+  Tesseract have already started threads, and the children sit at 0% CPU),
+  while `spawn` re-imports the main module — which under `python -m` is
+  `__main__.py`, re-run through `runpy` where its relative import cannot
+  resolve. Serial is ~150 ms/card, so the safe default costs little;
+  `--workers N` opts in and falls back to serial if the pool will not start.
 
 ## Accuracy
 
@@ -110,7 +153,13 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 frame tiers | 76/80 = **95%** |
 | frame tier round-trip | 16/16 = **100%** |
-| end-to-end decisions | 61/61 tests pass |
+| card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
+| test suite | **81 tests pass** |
+| throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
+
+On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
+98% accuracy and the badge reader hit 92% — with **zero costly errors**: no
+numbered card read as `E`, and no `E` read as a number.
 
 The four badge misses are all an isolated `#1` read as `#4`. Worth knowing:
 `12`, `14`, `100` and `1584` all read correctly, so `1` only fails alone —
@@ -125,8 +174,8 @@ in the CLI output.
 
 These numbers are on synthetic cards drawn by `synth.py` — a real game font
 and real artwork will differ. Treat them as a regression baseline, not a
-promise. Drop real screenshots in and run `calibrate` before trusting the
-frame thresholds.
+promise, and run the calibration loop above on real screenshots before
+trusting the frame thresholds.
 
 ## Testing
 
