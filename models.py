@@ -13,31 +13,27 @@ from typing import Any
 
 
 class FrameTier(str, Enum):
-    """Border styling, ordered worst -> best.
+    """The frame a card wears, using the game's own vocabulary.
 
-    The names are deliberately generic: what a given bot calls its frames
-    varies, but the visual progression (flat single colour -> saturated
-    multi-hue -> full rainbow holo) is near universal.
+    This is NOT a rarity ladder. An earlier version invented one
+    (common/uncommon/rare/holo) and read it off the border's colour, which
+    was wrong twice over: the ornate rainbow border belongs to ``E``, the
+    frame that carries *no* print number, while the plain border belongs to
+    ``NORMAL``, the one that does. Both are the game's common frames, so
+    decoration says nothing about value -- the number does.
+
+    Because the two known frames are distinguished by whether a print
+    number exists, the badge decides the frame; pixels only corroborate.
     """
 
-    UNKNOWN = "unknown"
-    COMMON = "common"
-    UNCOMMON = "uncommon"
-    RARE = "rare"
-    HOLO = "holo"
+    UNKNOWN = "unknown"   # badge unreadable, so the frame is undetermined
+    NORMAL = "normal"     # plain frame; carries the print number ("rating")
+    E = "e"               # ornate gold/chain frame; carries no number
+    OTHER = "other"       # neither known frame -- possibly rarer, worth review
 
     @property
-    def rank(self) -> int:
-        return _FRAME_ORDER.index(self)
-
-
-_FRAME_ORDER = [
-    FrameTier.UNKNOWN,
-    FrameTier.COMMON,
-    FrameTier.UNCOMMON,
-    FrameTier.RARE,
-    FrameTier.HOLO,
-]
+    def is_known(self) -> bool:
+        return self in (FrameTier.NORMAL, FrameTier.E)
 
 
 class Action(str, Enum):
@@ -70,6 +66,17 @@ class Card:
     @property
     def print_known(self) -> bool:
         return self.print_no is not None
+
+    @property
+    def frame_disagrees(self) -> bool:
+        """True when the pixels do not corroborate the badge-derived frame.
+
+        Not an error on its own -- it flags a card worth a human glance,
+        either because OCR misread the badge or because this frame is one
+        we have not seen before.
+        """
+        guess = self.frame_features.get("pixel_frame")
+        return bool(guess) and self.frame.is_known and guess != self.frame.value
 
     def label(self) -> str:
         who = self.character or f"card {self.slot}"

@@ -23,10 +23,10 @@ P = Policy()
 def corpus(tmp_path):
     """A small folder of spawns with known card counts."""
     specs = {
-        "a": [dict(tier=FrameTier.COMMON, badge="852"), dict(tier=FrameTier.COMMON, badge="14")],
-        "b": [dict(tier=FrameTier.HOLO, badge="7"), dict(tier=FrameTier.RARE, badge="12"),
-              dict(tier=FrameTier.COMMON, badge="E")],
-        "c": [dict(tier=FrameTier.UNCOMMON, badge="430"), dict(tier=FrameTier.COMMON, badge="9999")],
+        "a": [dict(tier=FrameTier.NORMAL, badge="852"), dict(tier=FrameTier.NORMAL, badge="14")],
+        "b": [dict(tier=FrameTier.E, badge="7"), dict(tier=FrameTier.OTHER, badge="12"),
+              dict(tier=FrameTier.NORMAL, badge="E")],
+        "c": [dict(tier=FrameTier.NORMAL, badge="430"), dict(tier=FrameTier.NORMAL, badge="9999")],
     }
     for name, sp in specs.items():
         cv2.imwrite(str(tmp_path / f"{name}.png"), draw_spawn(sp))
@@ -37,16 +37,16 @@ def corpus(tmp_path):
 
 @pytest.mark.parametrize("n", [2, 3, 4])
 def test_projection_split_finds_every_card(n):
-    img = draw_spawn([dict(tier=FrameTier.COMMON, badge=str(100 + i)) for i in range(n)])
+    img = draw_spawn([dict(tier=FrameTier.NORMAL, badge=str(100 + i)) for i in range(n)])
     assert len(projection_split(img)) == n
 
 
-def test_projection_handles_all_common_frames():
-    """Regression: grey common frames yield no closed contour, so the old
+def test_projection_handles_plain_low_contrast_frames():
+    """Regression: a pale NORMAL frame yields no closed contour, so the old
     contour-only path collapsed a two-card spawn into one box."""
     img = draw_spawn([
-        dict(tier=FrameTier.COMMON, badge="900"),
-        dict(tier=FrameTier.COMMON, badge="E"),
+        dict(tier=FrameTier.NORMAL, badge="900"),
+        dict(tier=FrameTier.NORMAL, badge="E"),
     ])
     assert len(find_cards(img, None, "auto")) == 2
 
@@ -57,7 +57,7 @@ def test_projection_returns_nothing_on_a_flat_image():
 
 
 def test_boxes_are_ordered_left_to_right():
-    img = draw_spawn([dict(tier=FrameTier.COMMON, badge=str(i)) for i in (11, 22, 33)])
+    img = draw_spawn([dict(tier=FrameTier.NORMAL, badge=str(i)) for i in (11, 22, 33)])
     xs = [b[0] for b in find_cards(img, None, "auto")]
     assert xs == sorted(xs)
 
@@ -131,17 +131,17 @@ def test_best_split_handles_an_empty_side():
 
 def test_fit_recovers_thresholds_from_labels():
     rows = []
-    for tier, vals in [("common", [0.10, 0.15]), ("uncommon", [0.35, 0.40]),
-                       ("rare", [0.60, 0.65]), ("holo", [0.85, 0.90])]:
-        rows += [{"rarity_index": v, "true_frame": tier} for v in vals]
+    for tier, vals in [("normal", [0.10, 0.15]), ("other", [0.45, 0.50]),
+                       ("e", [0.85, 0.90])]:
+        rows += [{"ornateness": v, "true_frame": tier} for v in vals]
     fit = fit_thresholds(rows)
     assert fit["overall_accuracy"] == 1.0
     t = fit["thresholds"]
-    assert t["uncommon"] < t["rare"] < t["holo"]
+    assert t["other"] < t["e"]
 
 
 def test_fit_reports_when_labels_are_missing():
-    fit = fit_thresholds([{"rarity_index": 0.5, "true_frame": ""}])
+    fit = fit_thresholds([{"ornateness": 0.5, "true_frame": ""}])
     assert fit["labelled"] == 0 and fit["thresholds"] == {}
 
 
@@ -164,7 +164,7 @@ def test_ocr_report_ignores_unlabelled_rows():
 def test_sheet_renders_one_card_per_row(tmp_path):
     rows = [{f: "" for f in CSV_FIELDS} | {"image": "a.png", "slot": 1, "print_no": "14",
                                            "no_number": "0", "frame": "rare",
-                                           "rarity_index": "0.7", "ocr_conf": "0.9"}]
+                                           "ornateness": "0.7", "ocr_conf": "0.9"}]
     out = tmp_path / "sheet.html"
     assert build_sheet(rows, out, CSV_FIELDS) == 1
     html = out.read_text()

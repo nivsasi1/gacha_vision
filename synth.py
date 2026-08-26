@@ -1,10 +1,14 @@
 """Generate synthetic spawn images.
 
-Real screenshots are the ground truth, but they arrive slowly and can't be
+Real screenshots are the ground truth, but they arrive slowly and cannot be
 committed to a repo. Synthetic spawns let the whole pipeline -- segmentation,
-badge OCR, frame classification, ranking -- be exercised deterministically in
-tests and demos. The frames imitate the *chromatic* character of each tier
-(flat and grey vs. vivid multi-hue), which is exactly what frame.py measures.
+badge OCR, frame corroboration, ranking -- be exercised deterministically in
+tests and demos.
+
+The two frames imitate the real ones: ``NORMAL`` is a thin pale border with a
+light bar along the bottom, ``E`` is a thick gold/bronze one with rainbow
+corner orbs. Note which is which -- the *ornate* frame is the one carrying no
+print number, which is the opposite of what decoration usually signals.
 """
 
 from __future__ import annotations
@@ -19,23 +23,24 @@ GUTTER = 24
 
 
 def _border_color(tier: FrameTier, t: float) -> tuple[int, int, int]:
-    """BGR colour for border ring at depth t in 0..1."""
-    if tier == FrameTier.HOLO:                       # full rainbow sweep
-        hue = int((t * 180 * 2) % 180)
-        hsv = np.uint8([[[hue, 235, 245]]])
-    elif tier == FrameTier.RARE:                     # vivid two-hue sweep
-        hue = int(95 + 45 * np.sin(t * np.pi * 2))
-        hsv = np.uint8([[[hue, 215, 230]]])
-    elif tier == FrameTier.UNCOMMON:                 # single saturated hue
-        hsv = np.uint8([[[105, 170, 205]]])
-    else:                                            # common: desaturated grey
-        v = int(90 + 25 * t)
-        return (v, v, v)
+    """BGR colour for the border ring at depth t in 0..1."""
+    if tier == FrameTier.E:                # ornate gold sweeping to bronze
+        hsv = np.uint8([[[int(14 + 12 * t), 205, int(150 + 85 * t)]]])
+    elif tier == FrameTier.OTHER:          # an unfamiliar frame: full rainbow
+        hsv = np.uint8([[[int((t * 360) % 180), 235, 245]]])
+    else:                                  # NORMAL: thin, pale, low saturation
+        hsv = np.uint8([[[int(120 + 30 * t), 60, 225]]])
     return tuple(int(c) for c in cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0])
 
 
+def _thickness(tier: FrameTier, w: int, h: int) -> int:
+    """The E frame is visibly heavier than the plain one."""
+    frac = 0.11 if tier in (FrameTier.E, FrameTier.OTHER) else 0.045
+    return max(4, int(min(w, h) * frac))
+
+
 def draw_card(
-    tier: FrameTier = FrameTier.COMMON,
+    tier: FrameTier = FrameTier.NORMAL,
     badge: str = "42",
     character: str = "CHARACTER",
     series: str = "SERIES",
@@ -53,10 +58,23 @@ def draw_card(
     img[:] = art
 
     # Border ring, drawn as nested rectangles.
-    thickness = max(6, int(min(w, h) * 0.11))
+    thickness = _thickness(tier, w, h)
     for i in range(thickness):
         t = i / max(1, thickness - 1)
         cv2.rectangle(img, (i, i), (w - 1 - i, h - 1 - i), _border_color(tier, t), 1)
+
+    if tier in (FrameTier.E, FrameTier.OTHER):
+        # Rainbow corner orbs, the E frame's signature.
+        for (cx, cy) in ((thickness, thickness), (w - thickness, thickness),
+                         (thickness, h - thickness), (w - thickness, h - thickness)):
+            for r in range(int(thickness * 1.3), 0, -1):
+                hsv = np.uint8([[[int((r * 10) % 180), 245, 250]]])
+                cv2.circle(img, (cx, cy), r,
+                           tuple(int(c) for c in cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0][0]), 1)
+    else:
+        # NORMAL wears a pale bar along the bottom edge.
+        cv2.rectangle(img, (thickness, h - thickness - 14),
+                      (w - thickness, h - thickness), (238, 226, 240), -1)
 
     # Badge: dark plate near the top-right with the print number (or E).
     bw, bh = 74, 40

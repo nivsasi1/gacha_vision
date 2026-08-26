@@ -29,7 +29,7 @@ def _print_cards(cards) -> None:
         conf = f"{c.ocr_confidence:.0%}" if c.ocr_confidence else "--"
         print(
             f"  slot {c.slot}: {c.label():<44} "
-            f"ocr={conf:<5} rarity_idx={c.frame_features.get('rarity_index', 0):.3f}"
+            f"ocr={conf:<5} ornate={c.frame_features.get('ornateness', 0):.3f}"
         )
         if c.ocr_confidence and c.ocr_confidence < 0.55:
             print(f"    ! low OCR confidence (raw: {c.ocr_text!r}) -- verify before trusting")
@@ -67,13 +67,13 @@ def cmd_analyze(a: argparse.Namespace) -> int:
 def cmd_calibrate(a: argparse.Namespace) -> int:
     """Dump raw frame features so THRESHOLDS can be tuned on real spawns."""
     cards = analyze_cards(load_image(a.image), a.expected, a.layout, read_names=False)
-    print(f"\n{Path(a.image).name} -- frame features (tune frame.THRESHOLDS from these)\n")
-    hdr = f"{'slot':<5}{'tier':<10}{'rarity':<9}{'entropy':<9}{'divers':<8}{'sat':<8}{'colored':<9}"
+    print(f"\n{Path(a.image).name} -- border features (tune frame.E_ORNATENESS from these)\n")
+    hdr = f"{'slot':<5}{'tier':<10}{'ornate':<9}{'entropy':<9}{'divers':<8}{'sat':<8}{'colored':<9}"
     print(hdr)
     print("-" * len(hdr))
     for c in cards:
         f = c.frame_features
-        print(f"{c.slot:<5}{c.frame.value:<10}{f['rarity_index']:<9.3f}"
+        print(f"{c.slot:<5}{c.frame.value:<10}{f['ornateness']:<9.3f}"
               f"{f['hue_entropy']:<9.3f}{f['hue_diversity']:<8.3f}{f['sat_mean']:<8.1f}"
               f"{f['colored_frac']:<9.3f}")
     print()
@@ -85,20 +85,20 @@ def cmd_demo(a: argparse.Namespace) -> int:
     out.mkdir(parents=True, exist_ok=True)
     scenarios = {
         "low_print_vs_junk": [
-            dict(tier=FrameTier.RARE, badge="14", character="BULMA", series="DRAGON BALL", art_hue=95),
-            dict(tier=FrameTier.COMMON, badge="852", character="YAEKA", series="YAKUZA GUIDE", art_hue=5),
+            dict(tier=FrameTier.NORMAL, badge="14", character="BULMA", series="DRAGON BALL", art_hue=95),
+            dict(tier=FrameTier.NORMAL, badge="852", character="YAEKA", series="YAKUZA GUIDE", art_hue=5),
         ],
         "both_under_20": [
-            dict(tier=FrameTier.UNCOMMON, badge="7", character="HIRO", series="FRANXX", art_hue=120),
-            dict(tier=FrameTier.RARE, badge="12", character="EIJUN", series="ACE DIAMOND", art_hue=20),
+            dict(tier=FrameTier.NORMAL, badge="7", character="HIRO", series="FRANXX", art_hue=120),
+            dict(tier=FrameTier.NORMAL, badge="12", character="EIJUN", series="ACE DIAMOND", art_hue=20),
         ],
         "both_bad": [
-            dict(tier=FrameTier.COMMON, badge="E", character="HIRO", series="FRANXX", art_hue=130),
-            dict(tier=FrameTier.COMMON, badge="1584", character="EIJUN", series="ACE DIAMOND", art_hue=15),
+            dict(tier=FrameTier.E, badge="E", character="HIRO", series="FRANXX", art_hue=130),
+            dict(tier=FrameTier.NORMAL, badge="1584", character="EIJUN", series="ACE DIAMOND", art_hue=15),
         ],
-        "holo_carry": [
-            dict(tier=FrameTier.HOLO, badge="430", character="RARE ONE", series="SHOW", art_hue=60),
-            dict(tier=FrameTier.COMMON, badge="900", character="FILLER", series="SHOW", art_hue=10),
+        "ornate_but_junk": [
+            dict(tier=FrameTier.E, badge="430", character="ORNATE ONE", series="SHOW", art_hue=60),
+            dict(tier=FrameTier.NORMAL, badge="900", character="FILLER", series="SHOW", art_hue=10),
         ],
     }
     policy = load_policy(a.policy)
@@ -199,7 +199,7 @@ def cmd_fit(a: argparse.Namespace) -> int:
         print(f"  overall: {fit.get('overall_accuracy', 0):.0%}")
         print("\n  paste into gacha_vision/frame.py:\n")
         print("  THRESHOLDS = {")
-        for tier in ("uncommon", "rare", "holo"):
+        for tier in ("other", "e"):
             if tier in fit["thresholds"]:
                 print(f"      FrameTier.{tier.upper()}: {fit['thresholds'][tier]},")
         print("  }")
@@ -268,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     f = sub.add_parser("fit", help="fit thresholds from a labelled CSV")
     f.add_argument("csv")
-    f.add_argument("--feature", default="rarity_index")
+    f.add_argument("--feature", default="ornateness")
     f.set_defaults(func=cmd_fit)
 
     d = sub.add_parser("demo", help="render synthetic spawns and score them")

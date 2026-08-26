@@ -19,7 +19,8 @@ from pathlib import Path
 
 from .models import FrameTier
 
-TIER_ORDER = [FrameTier.COMMON, FrameTier.UNCOMMON, FrameTier.RARE, FrameTier.HOLO]
+# Ordered by how ornate the border is, which is what the 1-D fit splits on.
+TIER_ORDER = [FrameTier.NORMAL, FrameTier.OTHER, FrameTier.E]
 
 
 def read_csv(path: str | Path) -> list[dict]:
@@ -53,7 +54,7 @@ def best_split(low_vals: list[float], high_vals: list[float]) -> tuple[float, fl
     return (round(best_t, 4), best_correct / total)
 
 
-def fit_thresholds(rows: list[dict], feature: str = "rarity_index") -> dict:
+def fit_thresholds(rows: list[dict], feature: str = "ornateness") -> dict:
     """Fit cut points for each adjacent tier pair from labelled rows."""
     by_tier: dict[str, list[float]] = {t.value: [] for t in TIER_ORDER}
     for r in rows:
@@ -96,7 +97,7 @@ def _apply_accuracy(by_tier: dict[str, list[float]], thresholds: dict[str, float
 
 
 def _classify(v: float, thresholds: dict[str, float]) -> str:
-    got = FrameTier.COMMON.value
+    got = FrameTier.NORMAL.value
     for tier in TIER_ORDER[1:]:
         t = thresholds.get(tier.value)
         if t is not None and v >= t:
@@ -211,7 +212,7 @@ def build_sheet(rows: list[dict], out_html: str | Path, fields: list[str]) -> in
   <img src="{html.escape(img)}" loading="lazy" alt="">
   <div class="meta">{html.escape(r['image'])} · slot {r['slot']}<br>
     read <b>{html.escape(str(got))}</b> ({conf:.0%}) · {html.escape(r.get('frame',''))}
-    · idx {_f(r,'rarity_index'):.3f}<br>{flag}</div>
+    · idx {_f(r,'ornateness'):.3f}<br>{flag}</div>
   <label>true print (number or E)<input class="tp" value="{html.escape(str(got))}"></label>
   <label>true frame<select class="tf">{tiers}</select></label>
 </div>""")

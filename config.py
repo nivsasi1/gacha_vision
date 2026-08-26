@@ -17,9 +17,14 @@ from .models import FrameTier
 @dataclass(frozen=True)
 class Policy:
     # --- component weights (should sum to 1.0) ---
-    w_print: float = 0.50
-    w_frame: float = 0.30
-    w_fame: float = 0.20
+    # Frame carries almost no weight on purpose: the two known frames are
+    # both the game's commons, and which one a card wears is decided by
+    # whether it has a print number -- information the print score already
+    # holds. Observed prints run 1600-2200, so most spawns are junk and the
+    # watchlist is what actually separates them.
+    w_print: float = 0.55
+    w_frame: float = 0.10
+    w_fame: float = 0.35
 
     # --- print number scoring ---
     # score = print_base - print_decay * log10(print_no), clamped.
@@ -34,13 +39,15 @@ class Policy:
     score_unreadable: float = 25.0
 
     # --- frame scoring ---
+    # E and NORMAL sit within a few points of each other because both are
+    # common; OTHER is nudged up only enough to surface for review, never
+    # enough to claim on its own.
     frame_scores: dict[str, float] = field(
         default_factory=lambda: {
-            FrameTier.UNKNOWN.value: 40.0,
-            FrameTier.COMMON.value: 25.0,
-            FrameTier.UNCOMMON.value: 50.0,
-            FrameTier.RARE.value: 75.0,
-            FrameTier.HOLO.value: 95.0,
+            FrameTier.UNKNOWN.value: 30.0,
+            FrameTier.E.value: 25.0,
+            FrameTier.NORMAL.value: 30.0,
+            FrameTier.OTHER.value: 55.0,
         }
     )
 

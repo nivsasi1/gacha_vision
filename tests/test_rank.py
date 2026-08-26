@@ -5,13 +5,17 @@ from __future__ import annotations
 import pytest
 
 from gacha_vision.config import Policy, normalise
+from gacha_vision.frame import frame_from_badge
 from gacha_vision.models import Action, Card, FrameTier
 from gacha_vision.rank import decide, score_card
 
 P = Policy()
 
 
-def card(slot, print_no=None, no_number=False, frame=FrameTier.COMMON, character="", series=""):
+def card(slot, print_no=None, no_number=False, frame=None, character="", series=""):
+    """Mirror production: the badge decides the frame unless one is forced."""
+    if frame is None:
+        frame = frame_from_badge(print_no, no_number)
     return Card(slot=slot, print_no=print_no, no_number=no_number,
                 frame=frame, character=character, series=series)
 
@@ -50,8 +54,8 @@ def test_fame_can_rescue_an_e_card_over_a_high_print():
     # character, so it still wins.
     watchlist = {normalise("Hiro"): 92}
     cards = [
-        card(1, no_number=True, frame=FrameTier.COMMON, character="Hiro"),
-        card(2, print_no=1584, frame=FrameTier.COMMON, character="Eijun"),
+        card(1, no_number=True, character="Hiro"),
+        card(2, print_no=1584, character="Eijun"),
     ]
     d = decide(cards, P, watchlist)
     assert d.action is Action.CLAIM
@@ -89,18 +93,40 @@ def test_take_both_respects_max_claims():
     assert len(d.slots) == 2
 
 
-# --- rule: better frame wins when prints are comparable -----------------
+# --- frames: E and NORMAL are both commons ------------------------------
+
+def test_badge_decides_the_frame():
+    assert card(1, print_no=1655).frame is FrameTier.NORMAL
+    assert card(1, no_number=True).frame is FrameTier.E
+    assert card(1).frame is FrameTier.UNKNOWN          # badge unreadable
+
+
+def test_the_two_known_frames_score_almost_the_same():
+    """Both are the game's commons, so neither may swing a decision."""
+    gap = abs(P.frame_score(FrameTier.NORMAL) - P.frame_score(FrameTier.E))
+    assert gap * P.w_frame < 1.0
+
+
+def test_an_unfamiliar_frame_outranks_the_known_commons():
+    """OTHER might be a genuinely rare frame, so it is nudged up..."""
+    assert P.frame_score(FrameTier.OTHER) > P.frame_score(FrameTier.NORMAL)
+
+
+def test_an_unfamiliar_frame_cannot_claim_on_its_own():
+    """...but never enough to claim a junk card by itself."""
+    d = decide([card(1, 9999, frame=FrameTier.OTHER)], P, {})
+    assert d.action is Action.SKIP
+
 
 def test_frame_breaks_a_print_tie():
-    cards = [card(1, 300, frame=FrameTier.COMMON), card(2, 300, frame=FrameTier.HOLO)]
-    d = decide(cards, P, {})
-    assert d.slots == [2]
+    """With prints equal the unfamiliar frame ranks higher -- but only ranks.
 
-
-def test_frame_tiers_are_ordered():
-    tiers = [FrameTier.COMMON, FrameTier.UNCOMMON, FrameTier.RARE, FrameTier.HOLO]
-    scores = [P.frame_score(t) for t in tiers]
-    assert scores == sorted(scores)
+    Neither card clears the claim floor here, which is the point: a frame
+    can order two cards without making either worth taking.
+    """
+    plain = score_card(card(1, 300, frame=FrameTier.NORMAL), P, {})
+    other = score_card(card(2, 300, frame=FrameTier.OTHER), P, {})
+    assert other.total > plain.total
 
 
 # --- must-claim overrides ----------------------------------------------
@@ -113,40 +139,40 @@ def test_ornate_frame_never_rescues_an_unnumbered_card():
     A frame must therefore never outrank a print number, or the ranker
     picks the junk half of every spawn.
     """
-    e_ornate = card(1, no_number=True, frame=FrameTier.HOLO)
-    numbered = card(2, print_no=1655, frame=FrameTier.COMMON)
+    e_ornate = card(1, no_number=True, frame=FrameTier.E)
+    numbered = card(2, print_no=1655, frame=FrameTier.NORMAL)
     d = decide([e_ornate, numbered], P, {})
     assert d.slots != [1], "an E card outranked a numbered card on frame alone"
     assert score_card(e_ornate, P, {}).total < score_card(numbered, P, {}).total
 
 
-def test_frame_cap_applies_to_every_tier_of_unnumbered_card():
-    common_e = score_card(card(1, no_number=True, frame=FrameTier.COMMON), P, {})
-    for tier in (FrameTier.UNCOMMON, FrameTier.RARE, FrameTier.HOLO):
-        assert score_card(card(1, no_number=True, frame=tier), P, {}).total == common_e.total
+def test_frame_cap_applies_to_every_frame_on_an_unnumbered_card():
+    base = score_card(card(1, no_number=True, frame=FrameTier.E), P, {})
+    for tier in (FrameTier.NORMAL, FrameTier.OTHER):
+        assert score_card(card(1, no_number=True, frame=tier), P, {}).total == base.total
 
 
 def test_frame_still_counts_for_numbered_cards():
-    plain = score_card(card(1, 300, frame=FrameTier.COMMON), P, {})
-    fancy = score_card(card(1, 300, frame=FrameTier.HOLO), P, {})
+    plain = score_card(card(1, 300, frame=FrameTier.NORMAL), P, {})
+    fancy = score_card(card(1, 300, frame=FrameTier.OTHER), P, {})
     assert fancy.total > plain.total
 
 
 def test_frame_cap_can_be_turned_off():
     p = P.with_overrides(frame_lifts_unnumbered=True)
-    assert (score_card(card(1, no_number=True, frame=FrameTier.HOLO), p, {}).total
-            > score_card(card(1, no_number=True, frame=FrameTier.COMMON), p, {}).total)
+    assert (score_card(card(1, no_number=True, frame=FrameTier.OTHER), p, {}).total
+            > score_card(card(1, no_number=True, frame=FrameTier.E), p, {}).total)
 
 
 def test_print_one_is_always_claimed():
-    d = decide([card(1, 1, frame=FrameTier.COMMON)], P, {})
+    d = decide([card(1, 1)], P, {})
     assert d.action is Action.CLAIM
 
 
 # --- skip ---------------------------------------------------------------
 
 def test_junk_spawn_is_skipped():
-    cards = [card(1, 4200, frame=FrameTier.COMMON), card(2, no_number=True, frame=FrameTier.COMMON)]
+    cards = [card(1, 4200), card(2, no_number=True)]
     d = decide(cards, P, {})
     assert d.action is Action.SKIP
     assert d.slots == []

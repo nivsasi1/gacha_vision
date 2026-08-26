@@ -13,7 +13,7 @@ import pytest
 
 from gacha_vision.analyze import analyze_cards
 from gacha_vision.config import Policy, normalise
-from gacha_vision.frame import classify_frame
+from gacha_vision.frame import guess_frame
 from gacha_vision.models import Action, FrameTier
 from gacha_vision.ocr import read_badge
 from gacha_vision.rank import decide
@@ -36,7 +36,7 @@ def run(specs, watchlist=None):
 
 @pytest.mark.parametrize("n", [2, 3, 4])
 def test_finds_every_card_in_the_spawn(n):
-    specs = [dict(tier=FrameTier.COMMON, badge=str(100 + i)) for i in range(n)]
+    specs = [dict(tier=FrameTier.NORMAL, badge=str(100 + i)) for i in range(n)]
     cards, _ = run(specs)
     assert len(cards) == n
     assert [c.slot for c in cards] == list(range(1, n + 1))
@@ -44,8 +44,8 @@ def test_finds_every_card_in_the_spawn(n):
 
 def test_slots_are_ordered_left_to_right():
     cards, _ = run([
-        dict(tier=FrameTier.COMMON, badge="852"),
-        dict(tier=FrameTier.COMMON, badge="430"),
+        dict(tier=FrameTier.NORMAL, badge="852"),
+        dict(tier=FrameTier.NORMAL, badge="430"),
     ])
     assert cards[0].print_no == 852 and cards[1].print_no == 430
 
@@ -76,42 +76,57 @@ def test_confidence_is_reported():
 
 # --- frame classification -----------------------------------------------
 
-@pytest.mark.parametrize("tier", list(FrameTier)[1:])
+@pytest.mark.parametrize("tier", [FrameTier.NORMAL, FrameTier.E])
 @pytest.mark.parametrize("hue", [5, 95])
-def test_frame_tier_round_trips(tier, hue):
-    assert classify_frame(draw_card(tier=tier, badge="42", art_hue=hue))[0] is tier
+def test_pixel_guess_round_trips_the_two_known_frames(tier, hue):
+    """guess_frame only ever answers NORMAL or E -- it cannot invent OTHER."""
+    assert guess_frame(draw_card(tier=tier, badge="42", art_hue=hue))[0] is tier
 
 
-def test_rarity_index_is_monotonic_across_tiers():
-    idx = [
-        classify_frame(draw_card(tier=t, badge="42"))[1]["rarity_index"]
-        for t in [FrameTier.COMMON, FrameTier.UNCOMMON, FrameTier.RARE, FrameTier.HOLO]
-    ]
-    assert idx == sorted(idx), f"tiers not monotonic: {idx}"
+def test_the_e_frame_measures_as_more_ornate_than_normal():
+    normal = guess_frame(draw_card(tier=FrameTier.NORMAL, badge="42"))[1]["ornateness"]
+    e = guess_frame(draw_card(tier=FrameTier.E, badge="E"))[1]["ornateness"]
+    assert normal < e
+
+
+def test_badge_overrides_the_border_and_the_conflict_is_flagged():
+    """An ornate border with a numeric badge is NORMAL, and gets flagged.
+
+    The badge is the game's definition of the frame, so it wins. The
+    disagreement is still surfaced, because it means either OCR slipped or
+    this is a frame we have not catalogued.
+    """
+    img = spawn([dict(tier=FrameTier.E, badge="430"), dict(tier=FrameTier.NORMAL, badge="852")])
+    cards = analyze_cards(img, expected=2, layout="auto", read_names=False)
+    assert cards[0].print_no == 430
+    assert cards[0].frame is FrameTier.NORMAL           # badge wins
+    assert cards[0].frame_features["pixel_frame"] == FrameTier.E.value
+    assert cards[0].frame_disagrees
+    assert not cards[1].frame_disagrees
 
 
 # --- whole-pipeline decisions -------------------------------------------
 
 def test_low_print_beats_high_print():
     _, d = run([
-        dict(tier=FrameTier.COMMON, badge="14"),
-        dict(tier=FrameTier.COMMON, badge="852"),
+        dict(tier=FrameTier.NORMAL, badge="14"),
+        dict(tier=FrameTier.NORMAL, badge="852"),
     ])
     assert d.action is Action.CLAIM and d.slots == [1]
 
 
 def test_two_low_prints_take_both():
     _, d = run([
-        dict(tier=FrameTier.COMMON, badge="7"),
-        dict(tier=FrameTier.COMMON, badge="12"),
+        dict(tier=FrameTier.NORMAL, badge="7"),
+        dict(tier=FrameTier.NORMAL, badge="12"),
     ])
     assert d.action is Action.CLAIM_BOTH and sorted(d.slots) == [1, 2]
 
 
 def test_two_junk_cards_are_skipped():
     _, d = run([
-        dict(tier=FrameTier.COMMON, badge="E"),
-        dict(tier=FrameTier.COMMON, badge="1584"),
+        dict(tier=FrameTier.NORMAL, badge="E"),
+        dict(tier=FrameTier.NORMAL, badge="1584"),
     ])
     assert d.action is Action.SKIP
 
@@ -120,8 +135,8 @@ def test_famous_character_rescues_a_junk_spawn():
     """Observed case: both cards weak, but one is a watchlist favourite."""
     wl = {normalise("HIRO"): 95}
     specs = [
-        dict(tier=FrameTier.COMMON, badge="E", character="HIRO", series="FRANXX"),
-        dict(tier=FrameTier.COMMON, badge="1584", character="EIJUN", series="ACE DIAMOND"),
+        dict(tier=FrameTier.NORMAL, badge="E", character="HIRO", series="FRANXX"),
+        dict(tier=FrameTier.NORMAL, badge="1584", character="EIJUN", series="ACE DIAMOND"),
     ]
     img = spawn(specs)
     cards = analyze_cards(img, expected=2, layout="auto", read_names=False)
@@ -130,16 +145,17 @@ def test_famous_character_rescues_a_junk_spawn():
     assert d.action is Action.CLAIM and d.slots == [1]
 
 
-def test_holo_frame_is_claimed_despite_a_bad_print():
+def test_a_decorated_border_no_longer_rescues_a_junk_print():
+    """Regression: this pair used to CLAIM on the ornate frame alone."""
     _, d = run([
-        dict(tier=FrameTier.HOLO, badge="900"),
-        dict(tier=FrameTier.COMMON, badge="430"),
+        dict(tier=FrameTier.E, badge="900"),
+        dict(tier=FrameTier.NORMAL, badge="430"),
     ])
-    assert d.action is Action.CLAIM and d.slots == [1]
+    assert d.action is Action.SKIP
 
 
 def test_column_layout_matches_auto_layout():
-    specs = [dict(tier=FrameTier.RARE, badge="14"), dict(tier=FrameTier.COMMON, badge="852")]
+    specs = [dict(tier=FrameTier.OTHER, badge="14"), dict(tier=FrameTier.NORMAL, badge="852")]
     img = spawn(specs)
     a = decide(analyze_cards(img, expected=2, layout="auto", read_names=False), P, {})
     c = decide(analyze_cards(img, expected=2, layout="columns", read_names=False), P, {})
@@ -149,14 +165,15 @@ def test_column_layout_matches_auto_layout():
 def test_decision_accuracy_over_a_scenario_grid():
     """Aggregate check: the pipeline must get the ACTION right every time."""
     cases = [
-        ([("14", FrameTier.COMMON), ("852", FrameTier.COMMON)], Action.CLAIM, [1]),
-        ([("852", FrameTier.COMMON), ("14", FrameTier.COMMON)], Action.CLAIM, [2]),
-        ([("7", FrameTier.COMMON), ("12", FrameTier.COMMON)], Action.CLAIM_BOTH, [1, 2]),
-        ([("3", FrameTier.UNCOMMON), ("20", FrameTier.COMMON)], Action.CLAIM_BOTH, [1, 2]),
-        ([("E", FrameTier.COMMON), ("1584", FrameTier.COMMON)], Action.SKIP, []),
-        ([("9999", FrameTier.COMMON), ("E", FrameTier.COMMON)], Action.SKIP, []),
-        ([("900", FrameTier.HOLO), ("430", FrameTier.COMMON)], Action.CLAIM, [1]),
-        ([("430", FrameTier.COMMON), ("900", FrameTier.HOLO)], Action.CLAIM, [2]),
+        ([("14", FrameTier.NORMAL), ("852", FrameTier.NORMAL)], Action.CLAIM, [1]),
+        ([("852", FrameTier.NORMAL), ("14", FrameTier.NORMAL)], Action.CLAIM, [2]),
+        ([("7", FrameTier.NORMAL), ("12", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        ([("3", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        ([("E", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.SKIP, []),
+        ([("9999", FrameTier.NORMAL), ("E", FrameTier.NORMAL)], Action.SKIP, []),
+        # Ornate border, junk print: the border must not carry the decision.
+        ([("900", FrameTier.E), ("430", FrameTier.NORMAL)], Action.SKIP, []),
+        ([("430", FrameTier.NORMAL), ("900", FrameTier.E)], Action.SKIP, []),
     ]
     wrong = []
     for badges, want_action, want_slots in cases:

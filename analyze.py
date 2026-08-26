@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from .config import Policy, load_watchlist
-from .frame import classify_frame
+from .frame import frame_from_badge, guess_frame
 from .models import Card, Decision
 from .ocr import read_badge, read_name
 from .rank import decide
@@ -50,7 +50,12 @@ def analyze_cards_with_boxes(
     for i, (x, y, w, h) in enumerate(boxes, start=1):
         crop = bgr[y:y + h, x:x + w]
         badge = read_badge(crop)
-        tier, feats = classify_frame(crop)
+        # The badge is authoritative: E is exactly the frame with no print
+        # number. The border measurement only corroborates it, and a
+        # disagreement is surfaced rather than allowed to override.
+        tier = frame_from_badge(badge["print_no"], badge["no_number"])
+        pixel_tier, feats = guess_frame(crop)
+        feats = dict(feats, pixel_frame=pixel_tier.value)
         character, series = ("", "")
         if read_names:
             character, series = split_name(read_name(crop))

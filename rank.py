@@ -41,7 +41,7 @@ def score_card(card: Card, policy: Policy, watchlist: dict[str, float]) -> Score
     fs = policy.frame_score(card.frame)
     frame_note = f"frame {card.frame.value} ({fs:.0f})"
     if card.no_number and not policy.frame_lifts_unnumbered:
-        capped = policy.frame_score(FrameTier.COMMON)
+        capped = policy.frame_score(FrameTier.E)
         if fs > capped:
             frame_note = f"frame {card.frame.value} capped to {capped:.0f} (no print number)"
             fs = capped

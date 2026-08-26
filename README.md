@@ -8,8 +8,14 @@ Given an image of two or more cards, it reports each card's **print number**,
 * lower print number is better (`#14` beats `#852`)
 * `E` (no print number) is the bottom — below *any* numbered card
 * two cards both under `#20` → take both, spend the extra pick
-* a better frame wins when prints are comparable
 * a watchlist character can rescue an otherwise weak card
+
+**Frames.** The game has two, and both are commons: `NORMAL` carries the
+print number (the "rating"), `E` carries none. Which one a card wears is
+therefore decided by its badge, not by how decorated its border looks — so
+the badge is authoritative here and the border only corroborates it. A card
+whose border disagrees with its badge is flagged rather than trusted, and a
+frame matching neither is recorded as `OTHER` for review.
 
 **Scope:** image in, decision out. There is no game integration, no network
 access and no account handling in this package, by design. It analyses
@@ -123,7 +129,7 @@ nearly everything.
 |---|---|---|
 | find cards | `segment.py` | gutter projection, falling back to contours then equal columns |
 | read the badge | `ocr.py` | component analysis → tight glyph crops → Tesseract, confidence-weighted vote |
-| frame rarity | `frame.py` | hue entropy + perplexity + saturation of the border ring |
+| frame | `frame.py` | badge decides `NORMAL` vs `E`; border ornateness corroborates |
 | decide | `rank.py` | weighted score per card, then the policy rules |
 
 Five findings shaped this code, each caught by measurement rather than
@@ -145,14 +151,19 @@ assumption:
   The flat background *between* cards is unmistakable, so splitting on
   low-variance columns finds every card instead.
 * **A fancy frame is not a rare card — in this game it is the opposite.**
-  The scorer began by assuming ornate frames meant rarity. Real spawns say
-  otherwise: across every observed spawn, each `E` card wore the ornate
-  gold/chain frame with rainbow corners while each *numbered* card wore a
-  plain thin border. Worse, the rarity index reads those ornate frames as
-  `holo`, which used to force an automatic claim — so the ranker picked the
-  junk half of every spawn. Frames no longer force a claim, and cannot lift
-  a card that has no print number (`frame_lifts_unnumbered`). Watchlist fame
-  still rescues an `E` card; only decoration is capped.
+  The scorer began by assuming ornate frames meant rarity, and invented a
+  `common/uncommon/rare/holo` ladder to read off the border's colour. Real
+  spawns say otherwise: each `E` card wore the ornate gold/chain frame with
+  rainbow corners while each *numbered* card wore a plain thin border.
+  Worse, the ornate frames measured as `holo`, which used to force an
+  automatic claim — so the ranker picked the junk half of every spawn.
+  The invented ladder is gone, replaced by the game's own two names, and
+  the badge now decides which frame a card wears.
+* **When a label is definitional, do not infer it from pixels.** `E` *is*
+  the frame with no print number, so reading the badge answers the frame
+  question exactly, while a border classifier can only approximate it. The
+  measurement is still taken — as a cross-check that catches OCR slips and
+  surfaces frames not yet catalogued — but it no longer decides anything.
 * **Parallelism is opt-in for a reason.** `fork` deadlocks (OpenCV and
   Tesseract have already started threads, and the children sit at 0% CPU),
   while `spawn` re-imports the main module — which under `python -m` is

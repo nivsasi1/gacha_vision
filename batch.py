@@ -35,7 +35,7 @@ LOW_OCR = 0.55
 CSV_FIELDS = [
     "image", "n_cards", "slot",
     "print_no", "no_number", "ocr_conf", "ocr_text",
-    "frame", "rarity_index", "hue_entropy", "hue_diversity", "sat_mean", "colored_frac",
+    "frame", "pixel_frame", "ornateness", "hue_entropy", "hue_diversity", "sat_mean", "colored_frac",
     "character", "series", "score_total", "action", "chosen_slots", "flags",
     # left blank for you to fill in when labelling:
     "true_print", "true_frame",
@@ -65,6 +65,8 @@ def _flags_for(cards) -> list[str]:
         flags.append("low_ocr")
     if any(c.print_no is None and not c.no_number for c in cards):
         flags.append("unreadable_badge")
+    if any(c.frame_disagrees for c in cards):
+        flags.append("frame_disagrees_with_badge")
     return flags
 
 
@@ -98,7 +100,8 @@ def analyze_one(
                 "ocr_conf": card.ocr_confidence,
                 "ocr_text": card.ocr_text[:40],
                 "frame": card.frame.value,
-                "rarity_index": f.get("rarity_index", 0.0),
+                "pixel_frame": f.get("pixel_frame", ""),
+                "ornateness": f.get("ornateness", 0.0),
                 "hue_entropy": f.get("hue_entropy", 0.0),
                 "hue_diversity": f.get("hue_diversity", 0.0),
                 "sat_mean": f.get("sat_mean", 0.0),
