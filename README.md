@@ -111,6 +111,12 @@ in JSON and pass `--policy`:
 The watchlist is a flat `{name: fame}` map; series names lift every character
 in that show. Fame ≥ `must_claim_fame` (default 90) forces a claim.
 
+**The watchlist matters more than it looks.** Observed real prints run to
+1600–2200, so the "two cards under #20" rule almost never fires and most
+spawns are correctly skipped. In practice the characters you care about are
+the signal that decides most spawns — an empty watchlist means skipping
+nearly everything.
+
 ## How it works
 
 | stage | file | approach |
@@ -138,6 +144,15 @@ assumption:
   closed card boundary — an all-common spawn collapsed into a single box.
   The flat background *between* cards is unmistakable, so splitting on
   low-variance columns finds every card instead.
+* **A fancy frame is not a rare card — in this game it is the opposite.**
+  The scorer began by assuming ornate frames meant rarity. Real spawns say
+  otherwise: across every observed spawn, each `E` card wore the ornate
+  gold/chain frame with rainbow corners while each *numbered* card wore a
+  plain thin border. Worse, the rarity index reads those ornate frames as
+  `holo`, which used to force an automatic claim — so the ranker picked the
+  junk half of every spawn. Frames no longer force a claim, and cannot lift
+  a card that has no print number (`frame_lifts_unnumbered`). Watchlist fame
+  still rescues an `E` card; only decoration is capped.
 * **Parallelism is opt-in for a reason.** `fork` deadlocks (OpenCV and
   Tesseract have already started threads, and the children sit at 0% CPU),
   while `spawn` re-imports the main module — which under `python -m` is

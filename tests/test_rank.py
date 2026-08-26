@@ -105,9 +105,37 @@ def test_frame_tiers_are_ordered():
 
 # --- must-claim overrides ----------------------------------------------
 
-def test_holo_is_always_claimed_even_with_a_terrible_print():
-    d = decide([card(1, 99999, frame=FrameTier.HOLO)], P, {})
-    assert d.action is Action.CLAIM
+def test_ornate_frame_never_rescues_an_unnumbered_card():
+    """Regression, from real spawns.
+
+    In Gachapon the ornate rainbow frames sit on the *worst* cards: every
+    observed E card wore one while the numbered cards wore a plain border.
+    A frame must therefore never outrank a print number, or the ranker
+    picks the junk half of every spawn.
+    """
+    e_ornate = card(1, no_number=True, frame=FrameTier.HOLO)
+    numbered = card(2, print_no=1655, frame=FrameTier.COMMON)
+    d = decide([e_ornate, numbered], P, {})
+    assert d.slots != [1], "an E card outranked a numbered card on frame alone"
+    assert score_card(e_ornate, P, {}).total < score_card(numbered, P, {}).total
+
+
+def test_frame_cap_applies_to_every_tier_of_unnumbered_card():
+    common_e = score_card(card(1, no_number=True, frame=FrameTier.COMMON), P, {})
+    for tier in (FrameTier.UNCOMMON, FrameTier.RARE, FrameTier.HOLO):
+        assert score_card(card(1, no_number=True, frame=tier), P, {}).total == common_e.total
+
+
+def test_frame_still_counts_for_numbered_cards():
+    plain = score_card(card(1, 300, frame=FrameTier.COMMON), P, {})
+    fancy = score_card(card(1, 300, frame=FrameTier.HOLO), P, {})
+    assert fancy.total > plain.total
+
+
+def test_frame_cap_can_be_turned_off():
+    p = P.with_overrides(frame_lifts_unnumbered=True)
+    assert (score_card(card(1, no_number=True, frame=FrameTier.HOLO), p, {}).total
+            > score_card(card(1, no_number=True, frame=FrameTier.COMMON), p, {}).total)
 
 
 def test_print_one_is_always_claimed():

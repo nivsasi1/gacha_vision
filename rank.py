@@ -39,14 +39,16 @@ def _fame_score(card: Card, watchlist: dict[str, float], policy: Policy) -> tupl
 def score_card(card: Card, policy: Policy, watchlist: dict[str, float]) -> Score:
     ps, pr = _print_score(card, policy)
     fs = policy.frame_score(card.frame)
+    frame_note = f"frame {card.frame.value} ({fs:.0f})"
+    if card.no_number and not policy.frame_lifts_unnumbered:
+        capped = policy.frame_score(FrameTier.COMMON)
+        if fs > capped:
+            frame_note = f"frame {card.frame.value} capped to {capped:.0f} (no print number)"
+            fs = capped
     fa, far = _fame_score(card, watchlist, policy)
 
     total = policy.w_print * ps + policy.w_frame * fs + policy.w_fame * fa
-    reasons = [
-        pr,
-        f"frame {card.frame.value} ({fs:.0f})",
-        far,
-    ]
+    reasons = [pr, frame_note, far]
     return Score(
         slot=card.slot,
         total=round(total, 2),
@@ -62,8 +64,9 @@ def _is_must_claim(card: Card, score: Score, policy: Policy) -> str | None:
         return f"print #{card.print_no} <= must-claim {policy.must_claim_print}"
     if score.fame_score >= policy.must_claim_fame:
         return f"fame {score.fame_score:.0f} >= must-claim {policy.must_claim_fame}"
-    if card.frame == FrameTier.HOLO:
-        return "holo frame"
+    # A holo frame used to force a claim here. Real spawns killed that rule:
+    # the ornate rainbow frames sit on the *worst* cards, so it fired on E
+    # cards and picked the junk half of the spawn every time.
     return None
 
 
@@ -86,7 +89,7 @@ def decide(cards: list[Card], policy: Policy, watchlist: dict[str, float] | None
     ranked = sorted(scores, key=lambda s: s.total, reverse=True)
 
     # A card earns a pick on its own merit if it is a must-claim (a top
-    # print, a watchlist favourite, a holo frame), or has a genuinely low
+    # print or a watchlist favourite), or has a genuinely low
     # print, or simply scores very highly. E-cards never qualify on the
     # print rule -- "no number" is not a low number.
     #

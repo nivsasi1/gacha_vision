@@ -61,6 +61,16 @@ class Policy:
     must_claim_print: int = 5
     # Always claim a character whose watchlist fame is at or above this.
     must_claim_fame: float = 90.0
+    # Whether a fancy frame may lift a card that has NO print number.
+    #
+    # Off, because real Gachapon spawns showed the opposite of the assumption
+    # this scorer started with: every "E" card wore the ornate gold/chain
+    # frame with rainbow corners, while the numbered cards wore a plain thin
+    # border. Frames there are cosmetic, so letting one lift an unnumbered
+    # card lets decoration impersonate rarity -- and breaks the first rule,
+    # that E ranks below any numbered card. Watchlist fame still rescues an
+    # E card; only the frame is capped.
+    frame_lifts_unnumbered: bool = False
     # How many cards a single spawn may be claimed from.
     max_claims: int = 2
 
