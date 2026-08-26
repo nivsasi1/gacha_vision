@@ -20,11 +20,50 @@ An ``E`` is only reported when no candidate produced digits.
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import sys
 
 import cv2
 import numpy as np
 import pytesseract
+
+# Windows installers put tesseract.exe somewhere PATH does not reach, which
+# is the first thing that breaks a fresh checkout there. Look for it before
+# giving up, and let TESSERACT_CMD override everything.
+_WINDOWS_CANDIDATES = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe"),
+    os.path.expandvars(r"%USERPROFILE%\AppData\Local\Tesseract-OCR\tesseract.exe"),
+)
+
+
+def find_tesseract() -> str | None:
+    """Locate the tesseract binary, or None if it cannot be found."""
+    override = os.environ.get("TESSERACT_CMD")
+    if override and os.path.isfile(override):
+        return override
+    on_path = shutil.which("tesseract")
+    if on_path:
+        return on_path
+    if sys.platform.startswith("win"):
+        for cand in _WINDOWS_CANDIDATES:
+            if cand and os.path.isfile(cand):
+                return cand
+    return None
+
+
+def configure_tesseract() -> str | None:
+    """Point pytesseract at the binary. Returns the path used, or None."""
+    found = find_tesseract()
+    if found:
+        pytesseract.pytesseract.tesseract_cmd = found
+    return found
+
+
+configure_tesseract()
 
 # psm 8 ("single word") and 13 ("raw line") are the only modes that reliably
 # handle a tight, stylised numeric crop; psm 7 returns empty on these.

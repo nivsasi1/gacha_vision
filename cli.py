@@ -6,6 +6,7 @@
     python -m gacha_vision fit      labels.csv               # tune thresholds
     python -m gacha_vision demo     [--out DIR]
     python -m gacha_vision calibrate shot.png [--expected 2]
+    python -m gacha_vision doctor                             # check the setup
 """
 
 from __future__ import annotations
@@ -115,6 +116,55 @@ def cmd_demo(a: argparse.Namespace) -> int:
         print(d.explain())
     print(f"\nimages written to {out}/\n")
     return 0
+
+
+def cmd_doctor(a: argparse.Namespace) -> int:
+    """Check that this machine can actually run the pipeline.
+
+    Exists because setup problems surface on a machine nobody debugging them
+    can see; one paste of this output names the broken piece.
+    """
+    import platform
+
+    ok = True
+    print(f"\npython      {sys.version.split()[0]}  ({platform.system()} {platform.machine()})")
+    for mod in ("numpy", "cv2", "PIL", "pytesseract"):
+        try:
+            m = __import__(mod)
+            print(f"{mod:<11} {getattr(m, '__version__', 'ok')}")
+        except Exception as exc:
+            ok = False
+            print(f"{mod:<11} MISSING -- {exc}")
+            print(f"            fix: pip install -r gacha_vision/requirements.txt")
+
+    from .ocr import find_tesseract
+    exe = find_tesseract()
+    if exe:
+        print(f"tesseract   {exe}")
+    else:
+        ok = False
+        print("tesseract   NOT FOUND")
+        print("            fix (Windows): winget install UB-Mannheim.TesseractOCR")
+        print("            fix (Linux):   sudo apt install tesseract-ocr")
+        print("            or set TESSERACT_CMD to the full path of tesseract.exe")
+
+    if ok:
+        # End-to-end self test on a card we draw here, so a pass means the
+        # whole chain works, not just that the imports resolved.
+        from .synth import draw_card
+        from .ocr import read_badge
+        from .frame import guess_frame
+        r = read_badge(draw_card(badge="1655"))
+        g = guess_frame(draw_card(tier=FrameTier.E, badge="E"))[0]
+        print(f"\nself-test   badge 1655 -> {r['print_no']}  (conf {r['confidence']:.0%})")
+        print(f"            ornate border -> {g.value}")
+        if r["print_no"] != 1655:
+            ok = False
+            print("            ! OCR self-test FAILED -- paste this output for help")
+
+    print("\n" + ("all good -- run: python -m gacha_vision extract <folder> --out crops"
+                  if ok else "setup incomplete; fix the lines above"))
+    return 0 if ok else 1
 
 
 def _progress(i, n):
@@ -270,6 +320,9 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("csv")
     f.add_argument("--feature", default="ornateness")
     f.set_defaults(func=cmd_fit)
+
+    doc = sub.add_parser("doctor", help="check python, deps and tesseract on this machine")
+    doc.set_defaults(func=cmd_doctor)
 
     d = sub.add_parser("demo", help="render synthetic spawns and score them")
     d.add_argument("--out", default="gacha_vision/samples")

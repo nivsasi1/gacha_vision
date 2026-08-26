@@ -3,7 +3,7 @@
 Reads a screenshot of an anime card spawn and says which card is worth taking.
 
 Given an image of two or more cards, it reports each card's **print number**,
-**frame rarity** and **character**, then applies a configurable policy:
+**frame** and **character**, then applies a configurable policy:
 
 * lower print number is better (`#14` beats `#852`)
 * `E` (no print number) is the bottom — below *any* numbered card
@@ -25,8 +25,20 @@ screenshots you already have.
 
 ```bash
 pip install -r gacha_vision/requirements.txt
-sudo apt install tesseract-ocr          # the OCR engine itself
+
+# the OCR engine itself
+sudo apt install tesseract-ocr                    # Linux
+winget install UB-Mannheim.TesseractOCR           # Windows
+
+# then confirm the machine is actually ready:
+python -m gacha_vision doctor
 ```
+
+`doctor` checks Python, every dependency and the tesseract binary, then runs
+an end-to-end self-test on a card it draws itself — so a pass means the whole
+chain works, not just that the imports resolved. On Windows the binary is
+found automatically in the usual install locations; `TESSERACT_CMD` overrides
+that if yours lives somewhere else.
 
 ## Use
 
@@ -43,20 +55,20 @@ python -m gacha_vision analyze shot.png --json
 # render synthetic spawns and score them (no screenshots needed)
 python -m gacha_vision demo
 
-# dump frame features so the rarity thresholds can be tuned
+# dump border features so the E/NORMAL cut point can be tuned
 python -m gacha_vision calibrate shot.png --expected 2
 ```
 
 Typical output:
 
 ```
-slot 1: BULMA (#14, rare)      ocr=99%   rarity_idx=0.695
-slot 2: card 2 (#852, common)  ocr=100%  rarity_idx=0.175
+slot 1: BULMA (#14, normal)   ocr=100%  ornate=0.301
+slot 2: YAEKA (#852, normal)  ocr=100%  ornate=0.302
 
 CLAIM slot 1
-  - slot 1: BULMA (#14, rare) -> 64.8
+  - slot 1: BULMA (#14, normal) -> 53.4
   - claimed: print #14 <= 20
-  - passed on slot 2 card 2 (#852, common) (28.3)
+  - passed on slot 2 YAEKA (#852, normal) (29.8)
 ```
 
 Every decision explains itself. That is deliberate: the thresholds are
@@ -177,10 +189,9 @@ On synthetic spawns (`python -m gacha_vision demo`):
 
 | metric | result |
 |---|---|
-| badge OCR, 20 values × 4 frame tiers | 76/80 = **95%** |
-| frame tier round-trip | 16/16 = **100%** |
+| badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **81 tests pass** |
+| test suite | **84 tests pass** |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
