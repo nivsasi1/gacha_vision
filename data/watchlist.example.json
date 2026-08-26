@@ -1,0 +1,8 @@
+{
+  "_comment": "Characters and series you want weighted up. 0-100; >=90 forces a claim (Policy.must_claim_fame). Series entries lift every character in that show.",
+  "Bulma": 88,
+  "Hiro": 92,
+  "Dragon Ball": 80,
+  "Darling in the FRANXX": 78,
+  "Ace of the Diamond": 45
+}
