@@ -12,12 +12,46 @@ from gacha_vision.rank import decide, score_card
 P = Policy()
 
 
-def card(slot, print_no=None, no_number=False, frame=None, character="", series=""):
+def card(slot, print_no=None, no_number=False, frame=None, character="", series="",
+         trusted=True):
     """Mirror production: the badge decides the frame unless one is forced."""
     if frame is None:
         frame = frame_from_badge(print_no, no_number)
     return Card(slot=slot, print_no=print_no, no_number=no_number,
-                frame=frame, character=character, series=series)
+                frame=frame, character=character, series=series,
+                print_trusted=trusted)
+
+
+# --- a print we do not trust must not drive a decision ------------------
+
+def test_a_low_confidence_print_is_scored_as_unreadable():
+    """A shaky read is not evidence of a low number."""
+    shaky = score_card(card(1, 16, trusted=False), P, {})
+    solid = score_card(card(2, 16, trusted=True), P, {})
+    assert shaky.print_score < solid.print_score
+    assert shaky.print_score == P.score_unreadable
+
+
+def test_low_confidence_prints_never_trigger_take_both():
+    """Regression from 91 real spawns.
+
+    Prints there run 1600-2200, yet 59% of spawns came back CLAIM_BOTH --
+    the OCR was misreading long numbers as short ones and the take-both
+    rule was acting on reads the pipeline itself flagged as unreliable.
+    """
+    d = decide([card(1, 16, trusted=False), card(2, 5, trusted=False)], P, {})
+    assert d.action is not Action.CLAIM_BOTH
+
+
+def test_a_low_confidence_print_one_is_not_auto_claimed():
+    assert decide([card(1, 1, trusted=False)], P, {}).action is Action.SKIP
+
+
+def test_trust_only_gates_the_print_not_the_watchlist():
+    """Fame is read from text, not the badge, so it survives a shaky number."""
+    wl = {normalise("Hiro"): 95}
+    d = decide([card(1, 1655, trusted=False, character="Hiro")], P, wl)
+    assert d.action is Action.CLAIM
 
 
 # --- rule: lower print number is better ---------------------------------

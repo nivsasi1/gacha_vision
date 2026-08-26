@@ -10,7 +10,7 @@ import numpy as np
 from .config import Policy, load_watchlist
 from .frame import frame_from_badge, guess_frame
 from .models import Card, Decision
-from .ocr import read_badge, read_name
+from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name
 from .rank import decide
 from .segment import find_cards
 
@@ -69,6 +69,7 @@ def analyze_cards_with_boxes(
                 series=series,
                 ocr_text=badge["text"],
                 ocr_confidence=round(badge["confidence"], 3),
+                print_trusted=badge["confidence"] >= MIN_TRUSTED_CONFIDENCE,
                 frame_features=feats,
             )
         )

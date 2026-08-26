@@ -23,6 +23,7 @@ import cv2
 
 from .analyze import analyze_cards_with_boxes, load_image
 from .config import Policy
+from .ocr import MIN_TRUSTED_CONFIDENCE
 from .rank import decide
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
@@ -30,7 +31,7 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 # A spawn with a card count outside this range probably means segmentation
 # grabbed chat UI or missed a card -- worth a human glance before trusting it.
 PLAUSIBLE_CARDS = (2, 3)
-LOW_OCR = 0.55
+LOW_OCR = MIN_TRUSTED_CONFIDENCE
 
 CSV_FIELDS = [
     "image", "n_cards", "slot",

@@ -72,6 +72,11 @@ _WHITELIST = "-c tessedit_char_whitelist=0123456789E"
 _NAME_CFG = "--oem 3 --psm 6"
 
 BADGE_STRIP = 0.32          # fraction of card height searched for the badge
+# Below this confidence a read is evidence, not fact. Real spawns produced
+# 93% low-confidence reads against 3% on synthetic cards, and those shaky
+# reads were driving "take both" -- so the number is load-bearing, not
+# cosmetic, and lives here rather than in three separate call sites.
+MIN_TRUSTED_CONFIDENCE = 0.55
 _MIN_TOKEN_CONF = 4.0       # weight for a token Tesseract emitted but did not score
 # pytesseract shells out to the tesseract binary, so every candidate crop
 # costs a process spawn. Once a trustworthy glyph crop has produced a numeric

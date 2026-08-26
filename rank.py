@@ -17,6 +17,10 @@ def _print_score(card: Card, policy: Policy) -> tuple[float, str]:
         return policy.score_no_number, "no print number (E) -> weak"
     if card.print_no is None:
         return policy.score_unreadable, "print number unreadable -> neutral, review"
+    if not card.print_trusted:
+        # A shaky read is not a low print. Scoring it as if it were is how a
+        # misread #1655 becomes a #16 worth spending an extra pick on.
+        return policy.score_unreadable, f"print #{card.print_no} read with low confidence -> review"
     # Lower print number is rarer. log makes #1 vs #5 matter far more than
     # #400 vs #500, which matches how these games actually value prints.
     raw = policy.print_base - policy.print_decay * math.log10(max(card.print_no, 1))
@@ -59,9 +63,17 @@ def score_card(card: Card, policy: Policy, watchlist: dict[str, float]) -> Score
     )
 
 
+def _trusted_print(card: Card) -> int | None:
+    """The print number, but only when it is solid enough to act on."""
+    if card.no_number or card.print_no is None or not card.print_trusted:
+        return None
+    return card.print_no
+
+
 def _is_must_claim(card: Card, score: Score, policy: Policy) -> str | None:
-    if card.print_known and card.print_no is not None and card.print_no <= policy.must_claim_print:
-        return f"print #{card.print_no} <= must-claim {policy.must_claim_print}"
+    tp = _trusted_print(card)
+    if tp is not None and tp <= policy.must_claim_print:
+        return f"print #{tp} <= must-claim {policy.must_claim_print}"
     if score.fame_score >= policy.must_claim_fame:
         return f"fame {score.fame_score:.0f} >= must-claim {policy.must_claim_fame}"
     # A holo frame used to force a claim here. Real spawns killed that rule:
@@ -101,9 +113,9 @@ def decide(cards: list[Card], policy: Policy, watchlist: dict[str, float] | None
     for s in ranked:
         c = by_slot[s.slot]
         why = _is_must_claim(c, s, policy)
-        if not why and (not c.no_number and c.print_no is not None
-                        and c.print_no <= policy.take_both_max_print):
-            why = f"print #{c.print_no} <= {policy.take_both_max_print}"
+        tp = _trusted_print(c)
+        if not why and tp is not None and tp <= policy.take_both_max_print:
+            why = f"print #{tp} <= {policy.take_both_max_print}"
         if not why and s.total >= policy.take_both_min_score:
             why = f"score {s.total:.1f} >= {policy.take_both_min_score}"
         if why:
