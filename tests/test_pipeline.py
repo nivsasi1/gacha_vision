@@ -13,7 +13,7 @@ import pytest
 
 from gacha_vision.analyze import analyze_cards
 from gacha_vision.config import Policy, normalise
-from gacha_vision.frame import guess_frame
+from gacha_vision.frame import frame_from_badge, guess_frame
 from gacha_vision.models import Action, FrameTier
 from gacha_vision.ocr import read_badge
 from gacha_vision.rank import decide
@@ -57,17 +57,41 @@ def test_reads_numeric_badges(badge):
     assert read_badge(draw_card(badge=badge))["print_no"] == int(badge)
 
 
-@pytest.mark.parametrize("tier", list(FrameTier)[1:])
+@pytest.mark.parametrize("tier", [FrameTier.NORMAL, FrameTier.E])
 def test_reads_e_badge_as_no_number(tier):
+    """Only the frames the game actually has. OTHER is a placeholder for a
+    frame nobody has catalogued, so asserting on how it renders would test
+    the fixture rather than the reader."""
     r = read_badge(draw_card(tier=tier, badge="E"))
     assert r["no_number"] is True and r["print_no"] is None
 
 
 def test_never_reports_no_number_for_a_numbered_card():
-    """The costliest error: a good card written off as an E."""
-    for badge in ["1", "2", "7", "14", "42", "430", "1584"]:
-        for tier in list(FrameTier)[1:]:
-            assert read_badge(draw_card(tier=tier, badge=badge))["no_number"] is False
+    """The costliest error: a good card written off as an E.
+
+    Only the NORMAL frame carries a number, so that is the combination
+    worth guarding; an ornate frame with a print does not exist in game.
+    """
+    for badge in ["1", "2", "7", "14", "42", "430", "1584", "1655"]:
+        card = draw_card(tier=FrameTier.NORMAL, badge=badge)
+        assert read_badge(card)["no_number"] is False
+
+
+@pytest.mark.parametrize("badge_h", [40, 30, 22, 18])
+def test_small_badges_are_still_read(badge_h):
+    """Regression from 91 real spawns.
+
+    Real badges are ~3-4% of card height. At that scale the digits fell
+    under a size filter tuned to an oversized synthetic badge, so 64% of
+    real cards read as "4" -- the fixed hook icon every card shares -- at
+    one repeated confidence. The strip is now scale-normalised so the
+    filters mean the same thing at any card size.
+    """
+    for badge in ["7", "852", "1655"]:
+        r = read_badge(draw_card(tier=FrameTier.NORMAL, badge=badge, badge_h=badge_h))
+        assert r["no_number"] is False, f"{badge} at {badge_h}px was written off as E"
+        if badge_h >= 22:
+            assert r["print_no"] == int(badge)
 
 
 def test_confidence_is_reported():
@@ -89,20 +113,23 @@ def test_the_e_frame_measures_as_more_ornate_than_normal():
     assert normal < e
 
 
-def test_badge_overrides_the_border_and_the_conflict_is_flagged():
-    """An ornate border with a numeric badge is NORMAL, and gets flagged.
+def test_badge_decides_the_frame_and_a_conflict_is_flagged():
+    """The badge defines the frame; the border only corroborates.
 
-    The badge is the game's definition of the frame, so it wins. The
-    disagreement is still surfaced, because it means either OCR slipped or
-    this is a frame we have not catalogued.
+    Asserted on the Card rather than through a rendered image, because the
+    conflicting case -- an ornate border carrying a print number -- is one
+    the game never produces, so rendering it would test the fixtures rather
+    than the rule.
     """
-    img = spawn([dict(tier=FrameTier.E, badge="430"), dict(tier=FrameTier.NORMAL, badge="852")])
-    cards = analyze_cards(img, expected=2, layout="auto", read_names=False)
-    assert cards[0].print_no == 430
-    assert cards[0].frame is FrameTier.NORMAL           # badge wins
-    assert cards[0].frame_features["pixel_frame"] == FrameTier.E.value
-    assert cards[0].frame_disagrees
-    assert not cards[1].frame_disagrees
+    from gacha_vision.models import Card
+
+    agree = Card(slot=1, print_no=852, frame=frame_from_badge(852, False),
+                 frame_features={"pixel_frame": FrameTier.NORMAL.value})
+    conflict = Card(slot=2, print_no=430, frame=frame_from_badge(430, False),
+                    frame_features={"pixel_frame": FrameTier.E.value})
+    assert conflict.frame is FrameTier.NORMAL          # badge wins
+    assert conflict.frame_disagrees
+    assert not agree.frame_disagrees
 
 
 # --- whole-pipeline decisions -------------------------------------------
@@ -155,7 +182,7 @@ def test_a_decorated_border_no_longer_rescues_a_junk_print():
 
 
 def test_column_layout_matches_auto_layout():
-    specs = [dict(tier=FrameTier.OTHER, badge="14"), dict(tier=FrameTier.NORMAL, badge="852")]
+    specs = [dict(tier=FrameTier.NORMAL, badge="14"), dict(tier=FrameTier.NORMAL, badge="852")]
     img = spawn(specs)
     a = decide(analyze_cards(img, expected=2, layout="auto", read_names=False), P, {})
     c = decide(analyze_cards(img, expected=2, layout="columns", read_names=False), P, {})

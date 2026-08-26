@@ -47,6 +47,7 @@ def draw_card(
     art_hue: int = 15,
     w: int = CARD_W,
     h: int = CARD_H,
+    badge_h: int = 40,
 ) -> np.ndarray:
     img = np.zeros((h, w, 3), dtype=np.uint8)
 
@@ -77,14 +78,18 @@ def draw_card(
                       (w - thickness, h - thickness), (238, 226, 240), -1)
 
     # Badge: dark plate near the top-right with the print number (or E).
-    bw, bh = 74, 40
+    # badge_h is a knob because the real cards wear a much smaller badge than
+    # the first synthetic ones did, and that difference turned out to matter.
+    bh = max(8, badge_h)
+    bw = int(bh * 1.85)
     bx, by = w - bw - thickness - 8, thickness + 8
     cv2.rectangle(img, (bx, by), (bx + bw, by + bh), (28, 24, 30), -1)
     cv2.rectangle(img, (bx, by), (bx + bw, by + bh), (210, 210, 215), 2)
-    scale = 1.15 if len(badge) <= 3 else 0.85
-    (tw, th), _ = cv2.getTextSize(badge, cv2.FONT_HERSHEY_SIMPLEX, scale, 2)
+    scale = (1.15 if len(badge) <= 3 else 0.85) * (bh / 40.0)
+    thick = max(1, int(round(2 * bh / 40.0)))
+    (tw, th), _ = cv2.getTextSize(badge, cv2.FONT_HERSHEY_SIMPLEX, scale, thick)
     cv2.putText(img, badge, (bx + (bw - tw) // 2, by + (bh + th) // 2),
-                cv2.FONT_HERSHEY_SIMPLEX, scale, (245, 245, 245), 2, cv2.LINE_AA)
+                cv2.FONT_HERSHEY_SIMPLEX, scale, (245, 245, 245), thick, cv2.LINE_AA)
 
     # Name block near the bottom.
     yb = int(h * 0.80)

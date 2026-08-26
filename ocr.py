@@ -71,7 +71,25 @@ _PSMS = (8, 13)
 _WHITELIST = "-c tessedit_char_whitelist=0123456789E"
 _NAME_CFG = "--oem 3 --psm 6"
 
-BADGE_STRIP = 0.32          # fraction of card height searched for the badge
+BADGE_STRIP = 0.25          # fraction of card height searched for the badge
+# ...and only the right-hand part of it. The badge sits top-right on every
+# card observed. Searching the full width dragged in the frame's left-hand
+# decoration -- on the ornate frame those corner orbs alone produced enough
+# glyph-shaped components to bury a small badge and to cost a tesseract
+# spawn each.
+BADGE_LEFT_EDGE = 0.42
+# The strip is resampled to this height before anything is measured, so the
+# fraction-based filters below mean the same thing on a 200px card and a
+# 900px one. Without it the filters were implicitly tuned to one card size:
+# real badges are ~3-4% of card height, and at that scale the digits fell
+# under the minimum-height cut and were discarded -- leaving only the fixed
+# hook icon, which every card shares and Tesseract reads as "4".
+_WORK_STRIP_H = 220
+# Glyph-size floors, as fractions of the NORMALISED strip -- which is what
+# makes them meaningful rather than tuned to one card size. Swept against
+# real badge proportions; see the note in _glyph_boxes.
+_MIN_GLYPH_H_FRAC = 0.06
+_MIN_GLYPH_AREA = 12
 # Below this confidence a read is evidence, not fact. Real spawns produced
 # 93% low-confidence reads against 3% on synthetic cards, and those shaky
 # reads were driving "take both" -- so the number is load-bearing, not
@@ -87,7 +105,7 @@ _EARLY_EXIT_CONF = 85.0
 # every mask and cost ~6x a numeric read. Candidates are ordered best-first
 # (tight glyph crops before plate interiors), so a cap drops the weakest
 # evidence, not the decisive kind.
-_MAX_CANDIDATES = 8
+_MAX_CANDIDATES = 6
 
 
 def _masks(gray: np.ndarray) -> list[np.ndarray]:
@@ -102,17 +120,31 @@ def _masks(gray: np.ndarray) -> list[np.ndarray]:
     return out
 
 
+def _normalise_strip(gray: np.ndarray) -> np.ndarray:
+    """Resample the badge strip to a fixed height.
+
+    Every filter downstream is a fraction of the strip's size, so without
+    this they silently mean different things at different resolutions.
+    """
+    h, w = gray.shape[:2]
+    if h == 0 or h == _WORK_STRIP_H:
+        return gray
+    scale = _WORK_STRIP_H / h
+    interp = cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA
+    return cv2.resize(gray, (max(1, int(w * scale)), _WORK_STRIP_H), interpolation=interp)
+
+
 def _glyph_boxes(mask: np.ndarray) -> list[tuple[int, int, int, int]]:
     H, W = mask.shape
     n, _, stats, _ = cv2.connectedComponentsWithStats(mask, 8)
     boxes = []
     for i in range(1, n):
         x, y, w, h, a = (int(v) for v in stats[i][:5])
-        if h < 0.12 * H or h > 0.85 * H:   # glyph-height, not speck or full plate
+        if h < _MIN_GLYPH_H_FRAC * H or h > 0.85 * H:
             continue
         if w < 2 or w > 0.45 * W:
             continue
-        if a < 12:
+        if a < _MIN_GLYPH_AREA:
             continue
         boxes.append((x, y, w, h))
     return boxes
@@ -137,6 +169,17 @@ def _partition_boxes(boxes):
         )
         (plates if encloses else glyphs).append(b)
     return plates, glyphs
+
+
+def _within_any(box, plates, slack: float = 0.15) -> bool:
+    """Is this glyph line sitting inside one of the plates?"""
+    x, y, w, h = box
+    for px, py, pw, ph in plates:
+        mx, my = pw * slack, ph * slack
+        if (x >= px - mx and y >= py - my
+                and x + w <= px + pw + mx and y + h <= py + ph + my):
+            return True
+    return False
 
 
 def _inset(box, frac: float = 0.18):
@@ -182,7 +225,10 @@ def _ocr_crop(gray_crop: np.ndarray) -> list[tuple[str, float]]:
     """
     if gray_crop.size == 0 or min(gray_crop.shape[:2]) < 4:
         return []
-    up = cv2.resize(gray_crop, None, fx=6, fy=6, interpolation=cv2.INTER_CUBIC)
+    # Aim for a glyph around 64px tall: a fixed 6x under-scales a small crop
+    # and needlessly over-scales a large one.
+    scale = max(2.0, min(8.0, 64.0 / max(1, gray_crop.shape[0])))
+    up = cv2.resize(gray_crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
     _, th = cv2.threshold(up, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     if float((th == 255).mean()) < 0.5:      # white is the minority -> it is the ink
         th = cv2.bitwise_not(th)
@@ -211,9 +257,10 @@ def read_badge(card_bgr: np.ndarray) -> dict:
     read with no digits anywhere -- never as a fallback for failed OCR.
     """
     h, w = card_bgr.shape[:2]
-    strip = card_bgr[0:max(4, int(BADGE_STRIP * h)), :]
-    gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
-    sw = strip.shape[1]
+    x0 = int(BADGE_LEFT_EDGE * w)
+    strip = card_bgr[0:max(4, int(BADGE_STRIP * h)), x0:]
+    gray = _normalise_strip(cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY))
+    sw = gray.shape[1]
 
     seen_boxes: set[tuple[int, int, int, int]] = set()
     votes: dict[str, float] = {}        # label ("1584" / "E") -> weight
@@ -229,10 +276,21 @@ def read_badge(card_bgr: np.ndarray) -> dict:
         # trustworthy than a plate interior, which may still catch border
         # strokes. Weight the evidence accordingly rather than letting a
         # contaminated plate read outvote a clean glyph read.
-        candidates = (
-            [(box, 1.0) for box, _ in _group_lines(glyphs)]
-            + [(_inset(p), 0.4) for p in plates]
-        )
+        # The badge is a plate with glyphs inside it. When such a plate is
+        # present it identifies the badge exactly, so restrict the search to
+        # its contents: the ornate frame's corner orbs are solid blobs that
+        # enclose nothing, so they stop competing -- they were being read as
+        # "2" over a real "E" -- and each one skipped is a tesseract spawn
+        # saved. Only with no plate at all do we fall back to open search.
+        lines = _group_lines(glyphs)
+        if plates:
+            inside = [(box, 1.0) for box, _ in lines if _within_any(box, plates)]
+            candidates = inside + [(_inset(p), 0.6) for p in plates]
+        else:
+            candidates = [(box, 1.0) for box, _ in lines]
+        # Rightmost first: the badge sits at the right edge, so the early
+        # exit tends to fire before the rest is scanned.
+        candidates.sort(key=lambda c: (-c[1], -(c[0][0] + c[0][2] / 2)))
         for box, src_weight in candidates:
             x, y, bw, bh = box
             key = (x // 4, y // 4, bw // 4, bh // 4)     # coarse dedupe
