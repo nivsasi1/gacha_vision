@@ -102,8 +102,9 @@ _WORD_GAP_FRAC = 0.45
 MIN_TRUSTED_CONFIDENCE = 0.55
 # Longest print observed on a real card. Anything longer is a misread.
 _MAX_PRINT_DIGITS = 4
-# Confidence a SINGLE-digit read must clear to be believed at all.
-_LONE_DIGIT_TRUST = 0.90
+# Confidence reported for a SINGLE-digit read, whatever Tesseract thought of
+# it. Deliberately below MIN_TRUSTED_CONFIDENCE -- see _read_badge_pass.
+_LONE_DIGIT_CONFIDENCE = MIN_TRUSTED_CONFIDENCE - 0.01
 _MIN_TOKEN_CONF = 4.0       # weight for a token Tesseract emitted but did not score
 # pytesseract shells out to the tesseract binary, so every candidate crop
 # costs a process spawn. Once a trustworthy glyph crop has produced a numeric
@@ -425,14 +426,31 @@ def _read_badge_pass(card_bgr: np.ndarray, narrow: bool) -> dict:
     conf = round(min(1.0, share * min(1.0, best_conf[best] / 85.0)), 3)
     if best == "E":
         return {"print_no": None, "no_number": True, "confidence": conf, "text": text}
-    if len(best) == 1 and conf < _LONE_DIGIT_TRUST:
-        # A lone digit is the hook icon, not a print. Of 28 single-digit
-        # reads across the labelled set, exactly ONE was a real print -- and
-        # that one came back at full confidence, while every impostor sat at
-        # 0.84 or below. Reporting the low confidence rather than discarding
-        # the value lets the existing trust gate score it as "unreadable,
-        # review" instead of as a spectacular #4.
-        conf = min(conf, MIN_TRUSTED_CONFIDENCE - 0.01)
+    if len(best) == 1:
+        # A lone digit is the hook icon beside the badge, not a print.
+        #
+        # Across 182 labelled real cards, 27 badges read as a single digit
+        # and NOT ONE was a genuine single-digit print. Nineteen of those sat
+        # on NORMAL frames, where a number certainly exists -- so this is not
+        # merely the E frame's hook leaking through, it is the reader losing
+        # the other three digits of a four-digit print. Reads of two, three
+        # and four digits land at 29%, 29% and 82% exact and are left to the
+        # ordinary confidence gate; one digit is 0%, so no confidence makes
+        # it believable. Tesseract's own certainty is worthless here: the
+        # most confident impostor in the set came back at 1.000, above every
+        # correct multi-digit read.
+        #
+        # The value is reported rather than discarded, so the CSV and the
+        # review flags still show what was seen -- only the *trust* is
+        # withheld, which scores the card "unreadable, review" instead of as
+        # a spectacular #4.
+        #
+        # The cost of being wrong: a genuine #1-#9 would be flagged for
+        # review rather than claimed. That has never once been observed --
+        # the lowest real print across 182 cards was two digits -- and the
+        # opposite error fired 27 times. If a real single-digit print ever
+        # does show up in a labelled batch, this is the line to revisit.
+        conf = min(conf, _LONE_DIGIT_CONFIDENCE)
     return {"print_no": int(best), "no_number": False, "confidence": conf, "text": text}
 
 

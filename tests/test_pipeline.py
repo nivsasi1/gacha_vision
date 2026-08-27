@@ -143,8 +143,10 @@ def test_low_print_beats_high_print():
 
 
 def test_two_low_prints_take_both():
+    # Two digits, not one: a lone digit is deliberately never trusted, so a
+    # "#7" here would be testing that rule rather than this one.
     _, d = run([
-        dict(tier=FrameTier.NORMAL, badge="7"),
+        dict(tier=FrameTier.NORMAL, badge="17"),
         dict(tier=FrameTier.NORMAL, badge="12"),
     ])
     assert d.action is Action.CLAIM_BOTH and sorted(d.slots) == [1, 2]
@@ -194,8 +196,10 @@ def test_decision_accuracy_over_a_scenario_grid():
     cases = [
         ([("14", FrameTier.NORMAL), ("852", FrameTier.NORMAL)], Action.CLAIM, [1]),
         ([("852", FrameTier.NORMAL), ("14", FrameTier.NORMAL)], Action.CLAIM, [2]),
-        ([("7", FrameTier.NORMAL), ("12", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
-        ([("3", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        ([("17", FrameTier.NORMAL), ("12", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        ([("13", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        # A lone digit is the hook icon, so it must NOT carry the spawn.
+        ([("4", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.SKIP, []),
         ([("E", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.SKIP, []),
         ([("9999", FrameTier.NORMAL), ("E", FrameTier.NORMAL)], Action.SKIP, []),
         # Ornate border, junk print: the border must not carry the decision.
@@ -221,7 +225,7 @@ def test_decision_accuracy_over_a_scenario_grid():
 def test_a_wide_spawn_still_picks_the_best_card(n):
     """The one good print is claimed no matter how many duds surround it."""
     specs = [dict(tier=FrameTier.NORMAL, badge="1600") for _ in range(n)]
-    specs[n - 1] = dict(tier=FrameTier.NORMAL, badge="8")
+    specs[n - 1] = dict(tier=FrameTier.NORMAL, badge="18")
     cards, d = run(specs)
     assert len(cards) == n
     assert d.action is Action.CLAIM and d.slots == [n]
@@ -230,7 +234,10 @@ def test_a_wide_spawn_still_picks_the_best_card(n):
 @pytest.mark.parametrize("n", [3, 4])
 def test_a_wide_spawn_spends_at_most_the_allowed_picks(n):
     """Three good cards in one spawn still yield only the two best picks."""
-    specs = [dict(tier=FrameTier.NORMAL, badge=b) for b in ("3", "9", "17", "12")[:n]]
+    # 11 and 15 are avoided on purpose: synth.py's own hook glyph merges into
+    # them (11 -> 41, 15 -> 415), which is the same artefact this reader
+    # fights on real cards but would be testing the wrong thing here.
+    specs = [dict(tier=FrameTier.NORMAL, badge=b) for b in ("12", "14", "16", "18")[:n]]
     _, d = run(specs)
     assert d.action is Action.CLAIM_BOTH
     assert len(d.slots) == P.max_claims
@@ -270,29 +277,41 @@ def test_a_five_digit_read_that_would_gain_a_leading_zero_is_rejected():
     assert _plausible_print("123456") is None
 
 
-def test_a_clean_single_digit_badge_is_still_trusted():
-    """The rule must not cost the good case: a crisp #4 is a real #4."""
-    from gacha_vision.analyze import analyze_cards
-    img = spawn([dict(tier=FrameTier.NORMAL, badge="4"),
-                 dict(tier=FrameTier.NORMAL, badge="1584")])
-    lone = analyze_cards(img, expected=2, read_names=False)[0]
-    assert lone.print_no == 4 and lone.print_trusted
-
-
 @pytest.mark.parametrize("badge", ["1", "3", "4", "7", "9"])
-@pytest.mark.parametrize("blur", [0, 5, 9, 13])
-def test_a_single_digit_read_is_either_certain_or_untrusted(badge, blur):
-    """No middle ground for a lone digit -- that band is where the hook lives.
+@pytest.mark.parametrize("blur", [0, 5, 9])
+def test_a_single_digit_read_is_never_trusted(badge, blur):
+    """A lone digit is the hook icon, at any confidence.
 
-    A single-digit read is either confident enough to believe outright or it
-    is demoted below the trust floor. Landing between the two would mean a
-    shaky lone digit still scoring as a spectacular print.
+    Tesseract's certainty carries no information here: the most confident
+    impostor in the labelled set read at 1.000, above every correct
+    multi-digit read. So the demotion cannot be gated on confidence.
     """
-    from gacha_vision.ocr import MIN_TRUSTED_CONFIDENCE, _LONE_DIGIT_TRUST, read_badge
+    from gacha_vision.ocr import MIN_TRUSTED_CONFIDENCE, read_badge
     img = draw_card(tier=FrameTier.NORMAL, badge=badge)
     if blur:
         img = cv2.GaussianBlur(img, (blur, blur), 0)
     r = read_badge(img)
     if r["print_no"] is not None and r["print_no"] < 10:
-        c = r["confidence"]
-        assert c >= _LONE_DIGIT_TRUST or c < MIN_TRUSTED_CONFIDENCE, c
+        assert r["confidence"] < MIN_TRUSTED_CONFIDENCE, r
+
+
+def test_an_untrusted_lone_digit_does_not_win_a_pick():
+    """The point of the demotion: #4 must stop outranking a real print."""
+    from gacha_vision.analyze import analyze_cards
+    img = spawn([dict(tier=FrameTier.NORMAL, badge="4"),
+                 dict(tier=FrameTier.NORMAL, badge="1584")])
+    cards = analyze_cards(img, expected=2, read_names=False)
+    lone = cards[0]
+    assert lone.print_no == 4, "the value is kept for review, only the trust is withheld"
+    assert not lone.print_trusted
+    assert decide(cards, P, {}).action is Action.SKIP
+
+
+def test_a_multi_digit_read_is_still_trusted_on_its_confidence():
+    """The rule is narrow: two digits and up go through the ordinary gate."""
+    from gacha_vision.analyze import analyze_cards
+    img = spawn([dict(tier=FrameTier.NORMAL, badge="14"),
+                 dict(tier=FrameTier.NORMAL, badge="852")])
+    cards = analyze_cards(img, expected=2, read_names=False)
+    assert cards[0].print_no == 14 and cards[0].print_trusted
+    assert decide(cards, P, {}).action is Action.CLAIM

@@ -196,7 +196,7 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **123 tests pass** |
+| test suite | **119 tests pass** |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
@@ -226,8 +226,8 @@ trusting the frame thresholds.
 | metric | result |
 |---|---|
 | **decision** (action + slots) vs the labels | 90/91 spawns = **99%** |
-| frame, `sat_mean` cut at 152.65 | 180/182 = **99%** |
-| badge OCR, exact value | 124/182 = **68%** |
+| frame, `sat_mean` cut at 152.65 | 182/182 = **100%** |
+| badge OCR, exact value | 123/182 = **68%** |
 | character name, read anything at all | 149/182 = **82%** |
 | series name, read anything at all | 74/182 = **41%** |
 
@@ -236,15 +236,35 @@ a four-digit print — `1609` read as `4609`, `2328` as `7328` — and both are
 junk either way, so the decision is unchanged. Decision accuracy went 88% →
 99% on two rules fitted here, without the exact-read figure moving much:
 
-* **A lone digit is the hook icon, not a print.** Of 28 single-digit reads,
-  exactly one was a genuine print — and it came back at full confidence
-  while every impostor sat at 0.84 or below. Demoting the uncertain ones
-  below the trust floor removed 8 of the 11 wrong decisions on its own.
+* **A lone digit is the hook icon, not a print.** Of 27 single-digit reads,
+  *none* was a genuine print — 19 of them on `NORMAL` frames, where a number
+  certainly exists, so this is the reader losing three digits of a four-digit
+  print rather than the `E` frame leaking through. Two-, three- and
+  four-digit reads land at 29%, 29% and 82% exact and go through the ordinary
+  confidence gate; one digit is 0%, so it is demoted unconditionally.
+  Tesseract's own certainty carries no information here — the most confident
+  impostor read at 1.000, above every correct multi-digit read.
 * **No print is longer than four digits.** All 14 five-digit candidates were
   a real print with the hook glued on as a leading `1` (`1695` → `11695`).
   One leading `1` comes off, and only when the tail could itself be a print.
   Selection then prefers the longest surviving candidate, since a short one
   means glyphs were dropped.
+
+The cost of the lone-digit rule is that a genuine `#1`–`#9` would be flagged
+for review rather than claimed. That has never been observed — the lowest
+real print across 182 cards was two digits — while the opposite error fired
+27 times. The comment in `ocr.py` marks the line to revisit if a real
+single-digit print ever appears in a labelled batch.
+
+Two rules that looked promising were measured and **rejected**:
+
+* Letting the (100%-accurate) frame override the badge on whether a number
+  exists at all scored no better than the lone-digit rule alone, and asserts
+  more than the badge can support. The badge stays authoritative.
+* Claiming the best unreadable card whenever the spawn would be skipped
+  anyway — "a pick you were not going to spend costs nothing" — collapsed to
+  31%. Unreadable badges are common enough that it claims on almost every
+  spawn.
 
 The one remaining wrong decision is `cards30.png`, whose badge read as empty
 text — and that is the card wearing the frame that matches neither `E` nor
