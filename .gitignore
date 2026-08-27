@@ -14,3 +14,7 @@ crops_*/
 
 # montage sheets for hand-labelling: regenerate with tools/name_montage.py
 tools/name_sheets/
+
+# downloaded font files + visual comparisons for the font-ID experiment --
+# large binaries, not source; tools/identify_font.py re-fetches them
+tools/fonts/
