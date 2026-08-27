@@ -69,3 +69,70 @@ def test_top_line_component_count_tracks_the_character_name(corpus):
     assert len(thin) <= len(named) * 0.15, (
         f"{len(thin)}/{len(named)} cards' topmost line component count "
         f"doesn't track the character name's letter count: {thin[:10]}")
+
+
+def test_glyph_count_matches_the_label_on_most_cards(corpus):
+    """The alignment gate: a card only trains the atlas when its segmented
+    glyph count matches its label. This measures how many qualify."""
+    from gacha_vision.names import split_line
+    bands, truth = corpus
+    ok = 0
+    for card, (character, _series) in truth.items():
+        work = prepare_band(bands[card])
+        lines = segment_lines(work)
+        if not lines:
+            continue
+        glyphs = [g for g in split_line(work, lines[0]) if g is not None]
+        if len(glyphs) == len(character.replace(" ", "")):
+            ok += 1
+    assert ok >= 0.70 * len(truth), (
+        f"only {ok}/{len(truth)} character lines segment to their label length")
+
+
+def test_word_gaps_are_marked(corpus):
+    """'Yoshiko Tsushima' is two words; the reader must see the space."""
+    from gacha_vision.names import split_line
+    bands, truth = corpus
+    two_word = [c for c, (ch, _) in truth.items() if ch.count(" ") == 1]
+    assert two_word, "corpus should contain two-word character names"
+    found = 0
+    for card in two_word:
+        work = prepare_band(bands[card])
+        lines = segment_lines(work)
+        if lines and sum(1 for g in split_line(work, lines[0]) if g is None) == 1:
+            found += 1
+    assert found >= 0.70 * len(two_word), (
+        f"only {found}/{len(two_word)} two-word names had exactly one gap")
+
+
+def test_word_gap_falls_between_the_two_words(corpus):
+    """`test_word_gaps_are_marked` only counts *how many* gaps were found --
+    a stub that always inserts exactly one fixed gap into a fixed-shape
+    output, ignoring `work_gray`/`line` entirely, clears it every time on
+    every two-word card. Bind the gap's *position*: the glyph count on each
+    side must match each word's own letter count, not just sum to the
+    total. 0.20x is measured directly against the real implementation
+    (0.299 on the corpus); a shape-only stub cannot clear it since its gap
+    position never tracks the actual word split."""
+    from gacha_vision.names import split_line
+    bands, truth = corpus
+    two_word = [c for c, (ch, _) in truth.items() if ch.count(" ") == 1]
+    ok = 0
+    for card in two_word:
+        character, _ = truth[card]
+        w1, w2 = character.split(" ")
+        work = prepare_band(bands[card])
+        lines = segment_lines(work)
+        if not lines:
+            continue
+        out = split_line(work, lines[0])
+        none_idx = [i for i, g in enumerate(out) if g is None]
+        if len(none_idx) != 1:
+            continue
+        before = sum(1 for g in out[:none_idx[0]] if g is not None)
+        after = sum(1 for g in out[none_idx[0] + 1:] if g is not None)
+        if before == len(w1) and after == len(w2):
+            ok += 1
+    assert ok >= 0.20 * len(two_word), (
+        f"only {ok}/{len(two_word)} two-word names split at the right glyph "
+        f"counts on each side of the gap")
