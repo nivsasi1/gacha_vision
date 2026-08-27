@@ -11,3 +11,6 @@ crops_*/
 /labels*.csv
 /report*.csv
 /sheet.html
+
+# montage sheets for hand-labelling: regenerate with tools/name_montage.py
+tools/name_sheets/
