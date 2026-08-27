@@ -1,183 +1,183 @@
-image,n_cards,slot,print_no,no_number,ocr_conf,ocr_text,frame,pixel_frame,ornateness,hue_entropy,hue_diversity,sat_mean,colored_frac,character,series,score_total,action,chosen_slots,flags,true_print,true_frame,true_character,true_series
-29.png,2,1,1655,0,0.047,1655,normal,normal,0.7483,0.8735,0.6938,111.8,0.5346,ec,Ox,27.25,skip,,low_ocr|frame_disagrees_with_badge,1655,normal,Yoshiko Tsushima,Love Live! Series
-29.png,2,2,,1,0.047,4,e,e,0.5361,0.5175,0.2479,174.0,0.4821,avatars,hahahaha,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-34.png,2,1,,1,0.0,,e,e,0.6009,0.6265,0.3397,165.0,0.5712,lA 7,,27.25,skip,,low_ocr|unreadable_badge,E,e,,
-34.png,2,2,,1,0.918,E,e,e,0.5689,0.5794,0.2965,166.6,0.5181,,,16.3,skip,,low_ocr|unreadable_badge,E,e,Pastry Cookie,Cookie Run
-35.png,2,1,,1,0.918,E,e,e,0.5375,0.519,0.249,174.3,0.564,Abarat,,16.3,skip,,low_ocr,E,e,,
-35.png,2,2,4609,0,0.289,4609 1609 1,normal,normal,0.7324,0.8653,0.6775,106.2,0.3668,,,27.25,skip,,low_ocr,1609,normal,,
-36.png,2,1,,1,0.918,E,e,e,0.5811,0.5952,0.3104,167.3,0.5481,QOH,toy,16.3,skip,,low_ocr,E,e,Hinageshi Usuzumi,Momentary Lily
-36.png,2,2,4,0,0.54,0 4,normal,normal,0.697,0.8378,0.6258,100.5,0.5076,,,27.25,skip,,low_ocr,1770,normal,,
-37.png,3,1,,1,0.941,E,e,e,0.6376,0.6576,0.3717,174.9,0.5613,4 Chal aly I,penn,16.3,skip,,low_ocr,E,e,,
-37.png,3,2,,1,0.918,E,e,e,0.5734,0.5746,0.2924,172.6,0.4936,enire Catl,gihanahaha y,16.3,skip,,low_ocr,E,e,Cheshire Cat,Pandora Hearts
-37.png,3,3,733,0,0.136,E 4 733,normal,normal,0.7349,0.8665,0.6799,107.2,0.4293,u,,27.25,skip,,low_ocr,2155,normal,,
-38.png,2,1,,1,0.918,E,e,e,0.5947,0.6083,0.3223,170.4,0.5272,,,16.3,skip,,,E,e,,
-38.png,2,2,,1,0.878,E 2,e,e,0.5234,0.4915,0.23,177.3,0.5255,,,16.3,skip,,,E,e,Asta,Black Clover
-39.png,2,1,36,0,0.259,36,normal,normal,0.7384,0.8689,0.6846,107.9,0.3932,,,27.25,skip,,low_ocr,1916,normal,,
-39.png,2,2,,1,0.094,E,e,e,0.5434,0.5344,0.2604,170.8,0.5113,trae Wet i,AY ah ak aly ale a,16.3,skip,,low_ocr,E,e,,
-40.png,2,1,550,0,0.271,550,normal,normal,0.7277,0.8277,0.6077,131.4,0.5111,a Ec wo,,27.25,skip,,low_ocr,1550,normal,Mugen,Samurai Champloo
-40.png,2,2,,1,0.918,E,e,e,0.6449,0.6772,0.3934,168.8,0.5659,O Vee,,16.3,skip,,low_ocr,E,e,,
-41.png,2,1,,1,0.941,E,e,e,0.5418,0.5339,0.26,169.9,0.4964,1 SRE,thal A oy ahah at,16.3,skip,,,E,e,,
-41.png,2,2,,1,0.918,E,e,e,0.5815,0.6066,0.3208,161.3,0.6111,Hh Cheha H,,16.3,skip,,,E,e,Fluttershy,My Little Pony
-42.png,2,1,,1,0.878,E 1,e,e,0.5799,0.5655,0.2849,182.3,0.5504,area,,16.3,skip,,,E,e,,
-42.png,2,2,,1,0.918,E,e,e,0.5561,0.5454,0.2687,174.8,0.5529,aN ini gh,hahahah ary,16.3,skip,,,E,e,,
-43.png,2,1,,1,0.941,E,e,e,0.5834,0.5994,0.3142,166.7,0.5165,te 8 Oe er,Diecast meh ahah oly,16.3,skip,,,E,e,Atoferatofe Rybak,Mushoku Tensei
-43.png,2,2,2264,0,0.63,2264 2286 1228,normal,normal,0.7159,0.7994,0.5601,143.0,0.5517,Talana Inoue,Lycoris Recoll eos,24.22,skip,,,2284,normal,,
-44.png,2,1,,1,0.918,E,e,e,0.6227,0.6543,0.3681,165.6,0.5849,Lsatatats,thahahah aly,16.3,skip,,,E,e,,
-44.png,2,2,,1,0.918,E,e,e,0.5201,0.4879,0.2276,176.5,0.5189,hah aohaha y,,16.3,skip,,,E,e,Fuyumi Todoroki,My Hero Academia
-45.png,2,1,2072,0,0.047,2072,normal,normal,0.7003,0.8395,0.6289,101.8,0.5258,,,27.25,skip,,low_ocr|unreadable_badge,2072,normal,,
-45.png,2,2,,1,0.0,,e,e,0.6054,0.6185,0.332,172.8,0.543,Aesoiteih A,C LE,27.25,skip,,low_ocr|unreadable_badge,E,e,,
-46.png,2,1,,1,0.941,E,e,e,0.5619,0.5745,0.2923,163.9,0.547,Ohana,TNAN AN AN,16.3,skip,,,E,e,Gorgon,Fate Series
-46.png,2,2,,1,0.618,E 7,e,e,0.5667,0.5855,0.3018,161.6,0.5684,es Ne,alaNaaitar a i,16.3,skip,,,E,e,,
-47.png,2,1,99,0,0.961,99 39,normal,normal,0.7842,0.8938,0.7358,122.5,0.5425,een,,42.16,skip,,low_ocr|unreadable_badge,99,normal,,
-47.png,2,2,,1,0.0,,e,e,0.5698,0.5894,0.3052,161.9,0.5517,RED oh,thal Veh aha,27.25,skip,,low_ocr|unreadable_badge,E,e,Tweyen,Granblue Fantasy
-48.png,2,1,,1,0.727,E 7,e,e,0.5354,0.5195,0.2494,172.4,0.4785,l Abe ely,,16.3,skip,,,E,e,,
-48.png,2,2,,1,0.941,E,e,e,0.561,0.5633,0.283,169.2,0.4975,iL ral,,16.3,skip,,,E,e,,
-49.png,2,1,,1,0.697,E 7,e,e,0.5436,0.5386,0.2635,168.9,0.5149,Meter lt,livaWavarar,16.3,skip,,low_ocr|unreadable_badge,E,e,Ryousuke Kaga,"So, I Can't Play H?"
-49.png,2,2,,1,0.0,,e,e,0.5973,0.6223,0.3356,164.6,0.545,ORD,hahahaha,27.25,skip,,low_ocr|unreadable_badge,E,e,,
-50.png,2,1,508,0,0.786,508 00 EE,normal,normal,0.7147,0.8475,0.6436,106.6,0.4341,NOUN e,ees,32.78,skip,,low_ocr|frame_disagrees_with_badge,508,normal,,
-50.png,2,2,,1,0.047,7,e,e,0.5481,0.5636,0.2833,159.2,0.5929,ets,mah ohana,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,Fuyutsuki-san,The Ice Guy and His Cool Female Colleague
-51.png,2,1,,1,0.918,E,e,e,0.5507,0.545,0.2684,171.0,0.5416,mba ahah at,,16.3,skip,,low_ocr,E,e,,
-51.png,2,2,,1,0.094,E,e,e,0.5679,0.5653,0.2846,173.4,0.5495,5 4 asa,TREY mah ah ah aly,16.3,skip,,low_ocr,E,e,,
-52.png,2,1,1695,0,0.005,11695 44,normal,normal,0.7099,0.8525,0.653,99.1,0.4695,nagiclet rhe,,27.25,skip,,low_ocr,1695,normal,Liara Ainsbach Fernot Aries,The Stigma Magic of the Slave Trader and the Degenerate Beautiful Girls
-52.png,2,2,3,0,0.235,3,normal,normal,0.7375,0.8537,0.6551,119.2,0.4599,,,27.25,skip,,low_ocr,611,normal,,
-53.png,2,1,,1,0.918,E,e,e,0.5503,0.5381,0.2632,174.2,0.5286,,,16.3,skip,,,E,e,,
-53.png,2,2,,1,0.918,E,e,e,0.6189,0.6371,0.3503,172.6,0.5595,fitter,,16.3,skip,,,E,e,May,"BOFURI: I Don't Want to Get Hurt, so I'll Max Out My Defense"
-54.png,2,1,,1,0.873,7 E,e,e,0.603,0.6284,0.3416,165.5,0.5877,NAN AN ah a st,,16.3,skip,,,E,e,,
-54.png,2,2,2266,0,0.576,2266 266 2 5,normal,normal,0.7033,0.8371,0.6245,105.9,0.4273,x rr Nier Dy,NieR R piicant add,24.21,skip,,,2266,normal,,
-55.png,2,1,1690,0,0.003,690 11690,normal,normal,0.7684,0.8985,0.7457,106.7,0.576,werteen Gling Slane for,MylVevel,27.25,skip,,low_ocr,1690,normal,Shalsha,I've Been Killing Slimes for 300 Years and Maxed Out My Level
-55.png,2,2,1872,0,0.018,2 1872,normal,normal,0.687,0.8225,0.5986,104.4,0.4673,r Prony Py,Fos,27.25,skip,,low_ocr,1872,normal,,
-56.png,2,1,1,0,0.02,1 6 3,normal,normal,0.7305,0.8591,0.6654,109.7,0.5457,I aaaton,,27.25,skip,,low_ocr,1613,normal,,
-56.png,2,2,,1,0.941,E,e,e,0.5294,0.5125,0.2444,171.4,0.5068,1D ease,hahahah on SSS,16.3,skip,,low_ocr,E,e,Kayo Hinazuki,ERASED
-57.png,2,1,2,0,0.376,2,normal,normal,0.7279,0.859,0.6653,107.7,0.4996,D Android 17,Dragon Ball 5,27.25,skip,,low_ocr,2164,normal,,
-57.png,2,2,,1,0.786,E 7,e,e,0.5362,0.5277,0.2553,168.9,0.4958,la ay a aly a a,,16.3,skip,,low_ocr,E,e,,
-58.png,2,1,7305,0,0.009,7305 3,normal,normal,0.7565,0.8839,0.715,109.6,0.3761,,,27.25,skip,,low_ocr,2345,normal,Ryoma Hoshi,Danganronpa Series
-58.png,2,2,,1,0.893,E 7,e,e,0.5904,0.5945,0.3097,174.8,0.5642,NANANAN on,7,16.3,skip,,low_ocr,E,e,,
-59.png,2,1,,1,0.851,E 4,e,e,0.5583,0.5579,0.2787,170.0,0.5009,fe oee e,vi Chihahaty,16.3,skip,,low_ocr,E,e,,
-59.png,2,2,1630,0,0.212,1630,normal,normal,0.7041,0.8293,0.6106,112.2,0.3762,eZ Oow,,27.25,skip,,low_ocr,1630,normal,Hanasaki Miyabi,HoloStars
-60.png,2,1,,1,0.941,E,e,e,0.5735,0.5846,0.301,167.3,0.523,i,J,16.3,skip,,low_ocr,E,e,,
-60.png,2,2,2095,0,0.497,2095 095,normal,normal,0.7195,0.8571,0.6617,102.8,0.3973,SSS Class,nm,27.25,skip,,low_ocr,2095,normal,,
-61.png,2,1,,1,0.918,E,e,e,0.5621,0.5561,0.2772,173.8,0.5083,TV AN AN AN AN,,16.3,skip,,,E,e,Chocolove McDonell,Shaman King
-61.png,2,2,,1,0.918,E,e,e,0.5976,0.6273,0.3405,162.0,0.5725,,,16.3,skip,,,E,e,,
-62.png,2,1,4,0,0.54,4 5,normal,normal,0.693,0.8226,0.5988,108.8,0.4132,ea,,27.25,skip,,low_ocr,1754,normal,,
-62.png,2,2,7328,0,0.002,228 17328,normal,normal,0.6452,0.7619,0.5025,115.2,0.5874,n ct,Sg pil,27.25,skip,,low_ocr,2328,normal,Doppio Dropscythe,Nijisanji
-63.png,2,1,167,0,0.68,2 167,normal,normal,0.709,0.8338,0.6185,112.7,0.4479,,,39.16,skip,,low_ocr|frame_disagrees_with_badge,1672,normal,,
-63.png,2,2,,1,0.507,7 1,e,e,0.555,0.551,0.2732,171.1,0.4886,oe,a IR raNavas i,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-64.png,2,1,,1,0.918,E,e,e,0.5933,0.5904,0.3061,179.2,0.5543,1 samevnces 1,Maratea ITNANAN ANG rt aai,16.3,skip,,,E,e,Samekichi,Wadanohara and the Great Blue Sea
-64.png,2,2,,1,0.918,E,e,e,0.6322,0.6534,0.3672,173.3,0.5637,,,16.3,skip,,,E,e,,
-65.png,2,1,3250,0,0.541,7 4 3250,normal,normal,0.746,0.8744,0.6957,109.3,0.3489,,,27.25,skip,,low_ocr,3250,normal,,
-65.png,2,2,,1,0.918,E,e,e,0.6155,0.6302,0.3434,173.9,0.551,Ay scivsisrd,,16.3,skip,,low_ocr,E,e,Ras Elclare,Epic Seven
-66.png,2,1,,1,0.918,E,e,e,0.6085,0.6353,0.3485,165.7,0.5555,hahahaha,,16.3,skip,,low_ocr,E,e,,
-66.png,2,2,1650,0,0.047,1650 11650,normal,normal,0.7346,0.8475,0.6436,121.7,0.5089,ee,,27.25,skip,,low_ocr,1650,normal,,
-67.png,2,1,,1,0.0,,e,e,0.5733,0.5856,0.3019,166.6,0.5349,e Ee ee,TN ANAL hy ary,27.25,skip,,low_ocr|unreadable_badge,E,e,Amyu,The Reincarnation of the Strongest Exorcist in Another World
-67.png,2,2,,1,0.918,E,e,e,0.5698,0.5813,0.2981,166.3,0.5065,i,th Val a ITNANANANG D eae,16.3,skip,,low_ocr|unreadable_badge,E,e,,
-68.png,2,1,,1,0.341,4,e,e,0.5519,0.5595,0.28,164.3,0.5227,i,,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-68.png,2,2,107,0,0.526,107 07 0,normal,normal,0.6346,0.7705,0.5152,101.3,0.5339,,,27.25,skip,,low_ocr|frame_disagrees_with_badge,707,normal,Luke Davis,Nerd Project
-69.png,2,1,,1,0.941,E,e,e,0.5849,0.5984,0.3132,168.5,0.5218,firaratatas,ithah ah ah ale,16.3,skip,,low_ocr,E,e,,
-69.png,2,2,1378,0,0.013,11378 197 178,normal,normal,0.6477,0.7809,0.5309,104.1,0.5191,identity V a,d 4 am,27.25,skip,,low_ocr,1978,normal,,
-70.png,2,1,,1,0.941,E,e,e,0.5232,0.5091,0.242,168.3,0.4971,,,16.3,skip,,,E,e,Mrs. Lim,Learning the Hard Way
-70.png,2,2,,1,0.918,E,e,e,0.6227,0.6542,0.3681,165.6,0.5849,Lsatatats,thahahah aly,16.3,skip,,,E,e,,
-71.png,2,1,,1,0.918,E,e,e,0.5728,0.5905,0.3062,163.6,0.5244,Miheast Lirumteersts 1,1 Raa mah ahah oy,16.3,skip,,low_ocr,E,e,,
-71.png,2,2,7,0,0.54,2 7,normal,normal,0.6767,0.7976,0.5571,114.5,0.4556,Oo ag ode,e es,27.25,skip,,low_ocr,247,normal,Kotori Monou,X/1999
-72.png,2,1,3066,0,0.337,3066 5066 066 66,normal,normal,0.6999,0.8333,0.6177,106.1,0.5149,Sena,,27.25,skip,,low_ocr,3066,normal,,
-72.png,2,2,3,0,0.265,3 2,normal,normal,0.7427,0.8734,0.6935,107.7,0.4488,sell,,27.25,skip,,low_ocr,1043,normal,,
-73.png,2,1,,1,0.0,,e,e,0.5681,0.5736,0.2916,169.1,0.494,mhvanah al fr,,27.25,skip,,low_ocr|unreadable_badge,E,e,Zoey,Noble Reincarnation: Born Blessed So I'll Obtain Ultimate Power
-73.png,2,2,2,0,0.475,2 3,normal,normal,0.6849,0.8009,0.5625,118.4,0.4485,,,27.25,skip,,low_ocr|unreadable_badge,2373,normal,,
-74.png,2,1,,1,0.813,4 E,e,e,0.5981,0.6136,0.3273,170.1,0.5202,Mest,thehah ah ay,16.3,skip,,,E,e,,
-74.png,2,2,,1,0.918,E,e,e,0.5654,0.5467,0.2698,181.2,0.5287,IN 1 REE I e,anal al,16.3,skip,,,E,e,Misaki Nakahara,Welcome To The N.H.K
-75.png,2,1,2052,0,0.047,2052 12052,normal,normal,0.6709,0.8025,0.565,106.6,0.5387,,,27.25,skip,,low_ocr,2052,normal,,
-75.png,2,2,100,0,0.464,0 00 100,normal,normal,0.7157,0.8487,0.6458,106.5,0.4375,,,27.25,skip,,low_ocr,100,normal,,
-76.png,2,1,1835,0,0.024,11835 4 3,normal,normal,0.7451,0.8535,0.6549,125.1,0.5754,tovelliveliSenes,x,27.25,skip,,low_ocr,1835,normal,Kanan Matsuura,Love Live! Series
-76.png,2,2,537,0,0.702,537 37,normal,normal,0.7511,0.8889,0.7253,101.5,0.4932,eS,,32.46,skip,,low_ocr,537,normal,,
-77.png,2,1,557,0,0.022,57 557,normal,normal,0.7302,0.874,0.6948,97.6,0.5066,ssoult Lily Bouquet,,27.25,skip,,low_ocr,1557,normal,,
-77.png,2,2,1065,0,0.027,11065 165 2,normal,normal,0.7267,0.8558,0.6591,109.3,0.3361,,,27.25,skip,,low_ocr,1065,normal,9A-91,Girls' Frontline
-78.png,2,1,,1,0.918,E,e,e,0.561,0.5538,0.2754,174.1,0.4776,AU LY,th vis hah aly,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-78.png,2,2,,0,0.453,4 EE,normal,normal,0.6113,0.7485,0.4834,98.4,0.5899,,,16.3,skip,,low_ocr|frame_disagrees_with_badge,1754,normal,,
-79.png,2,1,2646,0,0.643,2646 E6 266,normal,normal,0.6333,0.7505,0.4862,113.8,0.5399,,,23.32,skip,,,2646,normal,Rinne Amagi,Ensemble Stars!
-79.png,2,2,,1,0.941,E,e,e,0.5486,0.543,0.2669,170.3,0.4883,NO oie t,banana ay,16.3,skip,,,E,e,,
-80.png,2,1,2,0,0.247,2 7,normal,normal,0.6954,0.8217,0.5973,111.3,0.5281,S NNN oe,,27.25,skip,,low_ocr,1140,normal,,
-80.png,2,2,,1,0.918,E,e,e,0.6004,0.6164,0.33,170.2,0.5167,ta,Seta navaites te,16.3,skip,,low_ocr,E,e,Minami Sakurai,The Irregular at Magic High School
-81.png,2,1,,0,0.0,,normal,normal,0.7799,0.9024,0.7543,112.2,0.5616,eo 6Gsi a,7 DELTARUNE Fu,27.25,skip,,low_ocr|unreadable_badge,101,normal,,
-81.png,2,2,,1,0.047,E,e,e,0.5624,0.58,0.2971,161.3,0.5728,Wl Mi,,16.3,skip,,low_ocr|unreadable_badge,E,e,,
-82.png,2,1,,1,0.918,E,e,e,0.5473,0.525,0.2533,178.7,0.5875,,,16.3,skip,,low_ocr,E,e,Kurou Kiryuu,Ensemble Stars!
-82.png,2,2,633,0,0.32,633 2,normal,normal,0.7442,0.8757,0.6982,106.9,0.3609,ASCOT STOIC,aaicieedars Ctlihe ae Ae a,27.25,skip,,low_ocr,1633,normal,,
-83.png,2,1,,1,0.941,E,e,e,0.5379,0.5423,0.2664,162.6,0.5219,Oe ate,,16.3,skip,,low_ocr,E,e,,
-83.png,2,2,66,0,0.047,66,normal,normal,0.6189,0.7282,0.4559,117.4,0.5725,,,27.25,skip,,low_ocr,466,normal,Kazuki Kuwanomi,Plastic Memories
-84.png,2,1,6016,0,0.023,06 0 6016,normal,normal,0.8295,0.9422,0.8462,115.2,0.5365,Roronoa Zoro,,27.25,skip,,low_ocr,4016,normal,,
-84.png,2,2,,1,0.918,E,e,e,0.5503,0.5436,0.2673,171.4,0.4851,nie Ch al a 4,,16.3,skip,,low_ocr,E,e,,
-85.png,2,1,273,0,0.529,273,normal,normal,0.6804,0.8143,0.5847,105.3,0.4234,Oex,,27.25,skip,,low_ocr,2173,normal,Romani Archaman,Fate Series
-85.png,2,2,553,0,0.022,553 53,normal,normal,0.724,0.8566,0.6607,106.6,0.418,ad,,27.25,skip,,low_ocr,1553,normal,,
-86.png,2,1,2954,0,0.249,254 295 2954,normal,normal,0.6752,0.8145,0.585,101.2,0.4561,Musclesin,ees,27.25,skip,,low_ocr,2954,normal,,
-86.png,2,2,,1,0.873,7 E,e,e,0.5898,0.6096,0.3235,166.0,0.5353,,,16.3,skip,,low_ocr,E,e,Artoria Pendragon Alter,Fate Series
-87.png,2,1,,1,0.918,E,e,e,0.5322,0.5273,0.255,166.0,0.5171,IM CWA i,,16.3,skip,,low_ocr,E,e,,
-87.png,2,2,1605,0,0.487,1605 11605 4 605,normal,normal,0.6518,0.7904,0.5456,100.6,0.56,,,27.25,skip,,low_ocr,1605,normal,,
-88.png,2,1,,1,0.596,1 E,e,e,0.5413,0.5213,0.2507,175.9,0.4629,,,16.3,claim,2,,E,e,Natsuki Haibara,Haibara's Teenage New Game+
-88.png,2,2,20,0,0.583,20 4 0,normal,normal,0.6622,0.7277,0.4552,150.6,0.5457,aes,,51.33,claim,2,,20,normal,,
-89.png,2,1,,1,0.918,E,e,e,0.5342,0.5156,0.2466,173.4,0.4806,,,16.3,skip,,,E,e,,
-89.png,2,2,,1,0.918,E,e,e,0.5853,0.6007,0.3153,167.5,0.5125,,,16.3,skip,,,E,e,Shidou Itsuka & Tohka Yatogami,Date a Live
-90.png,2,1,733,0,0.29,733 3 7 5 153,normal,normal,0.6733,0.8143,0.5846,100.0,0.5237,Denji Pochita,,27.25,skip,,low_ocr,1753,normal,,
-90.png,2,2,,1,0.918,E,e,e,0.5826,0.5815,0.2983,175.9,0.5531,1 eReslei lh,Aan hahahah ary,16.3,skip,,low_ocr,E,e,,
-91.png,2,1,,1,0.918,E,e,e,0.5498,0.5398,0.2644,172.9,0.5017,hahahah aly,,16.3,skip,,low_ocr,E,e,Mafumafu,Utaite
-91.png,2,2,2535,0,0.047,12535,normal,normal,0.6445,0.7461,0.4801,125.2,0.5396,,,27.25,skip,,low_ocr,2535,normal,,
-cards.png,2,1,,1,0.918,E,e,e,0.6082,0.5969,0.3119,187.0,0.5563,Gh NONENCNT,A,16.3,skip,,low_ocr,E,e,,
-cards.png,2,2,31,0,0.21,31 7 4,normal,normal,0.7161,0.8136,0.5835,132.9,0.5914,,,27.25,skip,,low_ocr,1931,normal,,
-cards10.png,2,1,,1,0.918,E,e,e,0.5971,0.608,0.322,172.5,0.5189,anata,hah oh ah aly,16.3,skip,,,E,e,,
-cards10.png,2,2,,1,0.856,4 7 E,e,e,0.5449,0.5389,0.2637,169.7,0.5612,iTNAN AN aa aly,,16.3,skip,,,E,e,Delta,Boruto: Naruto Next Generations
-cards11.png,2,1,,1,0.54,4,e,e,0.5987,0.638,0.3512,156.8,0.5849,,,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-cards11.png,2,2,,1,0.918,E,e,e,0.6152,0.6374,0.3507,169.6,0.5365,lah eaves aly ci,oi thih ah aly,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-cards12.png,2,1,,1,0.941,E,e,e,0.5622,0.5921,0.3076,154.7,0.6053,ee ah,,16.3,skip,,low_ocr,E,e,Rom,Hyperdimension Neptunia
-cards12.png,2,2,7,0,0.047,7,normal,normal,0.748,0.8594,0.666,122.7,0.4484,Popplio,Fos,27.25,skip,,low_ocr,444,normal,,
-cards13.png,2,1,,1,0.54,7,e,e,0.6188,0.6394,0.3526,171.3,0.5665,,,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-cards13.png,2,2,,1,0.54,7,e,e,0.5917,0.618,0.3315,162.7,0.5328,ahahaha Yap,,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,Seimei,Senran Kagura
-cards14.png,2,1,1728,0,0.009,1728 4,normal,normal,0.7351,0.8624,0.6719,110.6,0.3853,pee,,27.25,skip,,low_ocr,1728,normal,,
-cards14.png,2,2,1610,0,0.009,60 1610,normal,normal,0.6441,0.7641,0.5057,112.9,0.5166,Rlhe Deviis a,,27.25,skip,,low_ocr,1610,normal,,
-cards15.png,2,1,,1,0.801,E 7,e,e,0.5925,0.6152,0.3289,164.9,0.5544,ria Ms,,16.3,skip,,low_ocr,E,e,Pig,Minecraft
-cards15.png,2,2,,1,0.504,4 E,e,e,0.6355,0.6599,0.3742,172.0,0.589,TN ANNAN A,,16.3,skip,,low_ocr,E,e,,
-cards16.png,2,1,,1,0.918,E,e,e,0.6225,0.6566,0.3706,164.1,0.5693,ee Ver,1 PRATT i Veh AaNn ah a y,16.3,skip,,low_ocr,E,e,,
-cards16.png,2,2,,1,0.151,E 7,e,e,0.5799,0.6012,0.3158,163.1,0.5236,deceeed tSetetiag Li,NAN AN A eee CO,16.3,skip,,low_ocr,E,e,Julius Juukulius,Re:Zero - Starting Life in Another World
-cards17.png,2,1,,1,0.832,4 E,e,e,0.5561,0.5719,0.2901,160.9,0.5442,ly,Lbaritatas hahahaha,16.3,skip,,low_ocr,E,e,,
-cards17.png,2,2,7,0,0.54,7,normal,normal,0.6422,0.7588,0.498,115.0,0.4679,,,27.25,skip,,low_ocr,1957,normal,,
-cards18.png,2,1,,1,0.941,E,e,e,0.5896,0.6061,0.3203,167.8,0.5532,Nah ah ah ay,,16.3,skip,,low_ocr,E,e,Castform,Pokemon
-cards18.png,2,2,1804,0,0.002,04 1804 8 104,normal,normal,0.6666,0.7938,0.551,109.5,0.4957,FulKasuni,Samurai Champloo,27.25,skip,,low_ocr,1804,normal,,
-cards19.png,2,1,1908,0,0.259,1908 E 08,normal,normal,0.7437,0.8755,0.6977,106.7,0.3902,,,27.25,skip,,low_ocr,1908,normal,,
-cards19.png,2,2,5287,0,0.282,5287,normal,normal,0.7404,0.8709,0.6886,107.8,0.3779,apanyscueiads i,ONE NSS,27.25,skip,,low_ocr,5287,normal,Tanjirou Kamado,Demon Slayer: Kimetsu no Yaiba
-cards2.png,2,1,7,0,0.047,7,normal,normal,0.7221,0.8578,0.6629,104.3,0.4604,510,a ae 4,27.25,skip,,low_ocr,1874,normal,,
-cards2.png,2,2,4,0,0.54,4,normal,normal,0.7145,0.8447,0.6384,108.6,0.3843,Zenocbia,fis ere,27.25,skip,,low_ocr,1931,normal,,
-cards20.png,2,1,2209,0,0.663,2209 209,normal,normal,0.6446,0.7855,0.538,98.6,0.5532,I ees,ilears of Themis,24.36,skip,,,2209,normal,,
-cards20.png,2,2,2975,0,0.671,2975,normal,normal,0.7189,0.8408,0.6312,114.9,0.5057,,,22.65,skip,,,2975,normal,,
-cards21.png,2,1,,1,0.055,4 E,e,e,0.5573,0.567,0.2861,164.4,0.5489,1 h,thabahah ary,16.3,skip,,low_ocr,E,e,Shizuku,The Elusive Samurai
-cards21.png,2,2,,1,0.941,E,e,e,0.5492,0.5419,0.266,171.4,0.4843,IN NA,4 Md as its,16.3,skip,,low_ocr,E,e,,
-cards22.png,2,1,7,0,0.047,7,normal,normal,0.7054,0.8361,0.6226,108.2,0.4949,State Members,eee,27.25,skip,,low_ocr,1237,normal,,
-cards22.png,2,2,,1,0.918,E,e,e,0.5434,0.5291,0.2564,173.5,0.4735,Anan ah a gt,fy,16.3,skip,,low_ocr,E,e,Yori Asanagi,Whispering You A Love Song
-cards23.png,2,1,,1,0.941,E,e,e,0.5293,0.5246,0.2531,165.1,0.5674,1 rh meme ly,,16.3,claim,2,frame_disagrees_with_badge,E,e,,
-cards23.png,2,2,,1,0.54,7,e,e,0.5416,0.5388,0.2637,167.3,0.511,hah oh ah a,,57.34,claim,2,frame_disagrees_with_badge,E,e,,
-cards24.png,2,1,609,0,0.859,609 0,normal,normal,0.7975,0.9245,0.804,106.6,0.473,Monster Eater,,31.74,skip,,,609,normal,Elysia,Monster Eater
-cards24.png,2,2,,1,0.918,E,e,e,0.5679,0.5749,0.2927,168.2,0.5495,,,16.3,skip,,,E,e,,
-cards25.png,2,1,,1,0.941,E,e,e,0.592,0.6061,0.3203,169.6,0.5101,talons,,16.3,skip,,low_ocr,E,e,,
-cards25.png,2,2,,1,0.004,7 E,e,e,0.5593,0.5617,0.2817,168.7,0.4964,,,16.3,skip,,low_ocr,E,e,Juuzou Suzuya,Tokyo Ghoul
-cards26.png,2,1,,0,0.0,,normal,normal,0.6925,0.8052,0.5694,121.1,0.4185,ee,,27.25,skip,,low_ocr|unreadable_badge,1854,normal,,
-cards26.png,2,2,2833,0,0.265,2833 12433 2433,normal,normal,0.7192,0.8383,0.6267,117.0,0.527,f Gamma,wr ThelEminence in poke nr 7 wt Nel,27.25,skip,,low_ocr|unreadable_badge,2433,normal,,
-cards27.png,2,1,2003,0,0.037,003 2003,normal,normal,0.6866,0.8168,0.5889,108.2,0.4034,eee,,27.25,skip,,low_ocr,2003,normal,Callisto Regulus,Villains Are Destined To Die
-cards27.png,2,2,5,0,0.271,5,normal,normal,0.6198,0.7435,0.4765,108.1,0.6002,Kamitsubaki City,UndersConstruction Ls,27.25,skip,,low_ocr,1044,normal,,
-cards28.png,2,1,7,0,0.54,2 7,normal,normal,0.6938,0.8251,0.6031,107.6,0.3988,e Oe,,27.25,skip,,low_ocr,2671,normal,,
-cards28.png,2,2,,1,0.014,7 E,e,e,0.5331,0.5282,0.2557,166.2,0.5263,ei Bk al Ms,,16.3,skip,,low_ocr,E,e,Aika,My Former Delinquent Stepsister Is A Nursing Mother
-cards3.png,2,1,,1,0.047,44,e,e,0.5351,0.5277,0.2554,167.9,0.5015,,,27.25,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-cards3.png,2,2,,1,0.918,E,e,e,0.573,0.5743,0.2922,172.4,0.496,Ceweiclsee,,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
-cards30.png,2,1,,0,0.0,,normal,normal,0.5505,0.5852,0.3015,149.5,0.5619,,,27.25,skip,,low_ocr|unreadable_badge,14,normal,Bulma,Dragon Ball
-cards30.png,2,2,652,0,0.223,52 2 652,normal,normal,0.6246,0.7518,0.488,106.3,0.4563,i henvakura siGude,a tomBais beysit tic J,27.25,skip,,low_ocr|unreadable_badge,852,normal,,
-cards31.png,2,1,2850,0,0.706,2850 4,normal,normal,0.6723,0.8026,0.5652,107.6,0.5498,ala,,22.9,skip,,low_ocr,2850,normal,,
-cards31.png,2,2,2349,0,0.047,2349,normal,normal,0.7251,0.8565,0.6605,107.6,0.3707,oe,,27.25,skip,,low_ocr,2349,normal,Kenpachi Zaraki,Bleach
-cards32.png,2,1,62,0,0.036,62 EE,normal,normal,0.6831,0.8179,0.5907,104.8,0.4568,ees,,27.25,skip,,low_ocr,1362,normal,,
-cards32.png,2,2,,1,0.941,E,e,e,0.5869,0.6045,0.3188,166.6,0.5393,fr,ly My i,16.3,skip,,low_ocr,E,e,,
-cards33.png,1,1,,1,0.047,4,e,e,0.5644,0.5812,0.298,162.3,0.3485,oe,,27.25,claim,1,low_ocr|frame_disagrees_with_badge,E,e,,
-cards4.png,2,1,,1,0.012,4 E,e,e,0.5577,0.5697,0.2883,163.3,0.5689,OR eneadh,thah ah ah aly,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Yoosung,Mystic Messenger
-cards4.png,2,2,,0,0.047,EE,normal,normal,0.7585,0.8898,0.7272,106.3,0.5791,c Oe,,16.3,skip,,low_ocr|frame_disagrees_with_badge,2511,normal,,
-cards5.png,2,1,,1,0.918,E,e,e,0.5851,0.5978,0.3127,168.9,0.5367,Eararates,I avaas i,16.3,skip,,,E,e,,
-cards5.png,2,2,,1,0.918,E,e,e,0.578,0.606,0.3202,159.0,0.5547,1 Saray mi,,16.3,skip,,,E,e,Suzuhara Lulu,Nijisanji
-cards6.png,2,1,2330,0,0.426,2330 17330 74 E,normal,normal,0.6864,0.8025,0.565,118.4,0.5716,ee,Stars,27.25,skip,,low_ocr|frame_disagrees_with_badge,2330,normal,,
-cards6.png,2,2,,0,0.001,0 EE 4,normal,normal,0.7566,0.8799,0.7068,113.0,0.3989,,,16.3,skip,,low_ocr|frame_disagrees_with_badge,1985,normal,,
-cards7.png,2,1,,1,0.016,7 E,e,e,0.5756,0.5765,0.2941,173.2,0.4986,hahahah aly,,16.3,skip,,low_ocr,E,e,Chaco,Fragaria Memories
-cards7.png,2,2,,1,0.918,E,e,e,0.6256,0.6566,0.3707,166.3,0.5831,,,16.3,skip,,low_ocr,E,e,,
-cards8.png,2,1,,1,0.941,E,e,e,0.562,0.5665,0.2856,168.2,0.5002,Jodeeme Ard Aled,vi With ah aly,16.3,skip,,low_ocr,E,e,,
-cards8.png,2,2,1029,0,0.002,29 11029 4,normal,normal,0.6653,0.7956,0.5539,107.2,0.533,gee,,27.25,skip,,low_ocr,1029,normal,Leo,Love Unholyc
-cards9.png,2,1,2886,0,0.491,1 2886 6 4,normal,normal,0.6807,0.8163,0.588,104.1,0.5311,,,27.25,skip,,low_ocr,2886,normal,,
-cards9.png,2,2,2527,0,0.019,740 12527 E,normal,normal,0.6856,0.8083,0.5746,113.6,0.6008,fore Piece,od aw Fo,27.25,skip,,low_ocr,2527,normal,,
+image,n_cards,slot,print_no,no_number,ocr_conf,ocr_text,frame,pixel_frame,ornateness,hue_entropy,hue_diversity,sat_mean,colored_frac,character,series,name_conf,score_total,action,chosen_slots,flags,true_print,true_frame,true_character,true_series
+29.png,2,1,1655,0,1.0,1655,normal,normal,0.7483,0.8735,0.6938,111.8,0.5346,ec,Ox,0.347,26.01,skip,,low_ocr|frame_disagrees_with_badge,1655,normal,Yoshiko Tsushima,Love Live! Series
+29.png,2,2,,1,0.047,4,e,e,0.5361,0.5175,0.2479,174.0,0.4821,avatars,hahahaha,0.15,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+34.png,2,1,,1,0.0,,e,e,0.6009,0.6265,0.3397,165.0,0.5712,lA 7,,0.505,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+34.png,2,2,,1,0.918,E,e,e,0.5689,0.5794,0.2965,166.6,0.5181,,,0.0,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Pastry Cookie,Cookie Run
+35.png,2,1,,1,0.918,E,e,e,0.5375,0.519,0.249,174.3,0.564,Abarat,,0.02,16.3,skip,,,E,e,,
+35.png,2,2,1609,0,1.0,1609,normal,normal,0.7324,0.8653,0.6775,106.2,0.3668,,,0.0,26.17,skip,,,1609,normal,,
+36.png,2,1,,1,0.918,E,e,e,0.5811,0.5952,0.3104,167.3,0.5481,QOH,toy,0.54,16.3,skip,,,E,e,Hinageshi Usuzumi,Momentary Lily
+36.png,2,2,1770,0,1.0,1770,normal,normal,0.697,0.8378,0.6258,100.5,0.5076,,,0.0,25.63,skip,,,1770,normal,,
+37.png,3,1,,1,0.941,E,e,e,0.6376,0.6576,0.3717,174.9,0.5613,4 Chal aly I,penn,0.472,16.3,skip,,,E,e,,
+37.png,3,2,,1,0.918,E,e,e,0.5734,0.5746,0.2924,172.6,0.4936,enire Catl,gihanahaha y,0.395,16.3,skip,,,E,e,Cheshire Cat,Pandora Hearts
+37.png,3,3,2155,0,1.0,2155,normal,normal,0.7349,0.8665,0.6799,107.2,0.4293,u,,0.85,24.5,skip,,,2155,normal,,
+38.png,2,1,,1,0.918,E,e,e,0.5947,0.6083,0.3223,170.4,0.5272,,,0.0,16.3,skip,,,E,e,,
+38.png,2,2,,1,0.878,E 2,e,e,0.5234,0.4915,0.23,177.3,0.5255,,,0.0,16.3,skip,,,E,e,Asta,Black Clover
+39.png,2,1,1916,0,1.0,1916,normal,normal,0.7384,0.8689,0.6846,107.9,0.3932,,,0.0,25.17,skip,,low_ocr,1916,normal,,
+39.png,2,2,,1,0.094,E,e,e,0.5434,0.5344,0.2604,170.8,0.5113,trae Wet i,AY ah ak aly ale a,0.333,16.3,skip,,low_ocr,E,e,,
+40.png,2,1,1550,0,1.0,1550,normal,normal,0.7277,0.8277,0.6077,131.4,0.5111,a Ec wo,,0.32,26.39,skip,,,1550,normal,Mugen,Samurai Champloo
+40.png,2,2,,1,0.918,E,e,e,0.6449,0.6772,0.3934,168.8,0.5659,O Vee,,0.335,16.3,skip,,,E,e,,
+41.png,2,1,,1,0.941,E,e,e,0.5418,0.5339,0.26,169.9,0.4964,1 SRE,thal A oy ahah at,0.38,16.3,skip,,,E,e,,
+41.png,2,2,,1,0.918,E,e,e,0.5815,0.6066,0.3208,161.3,0.6111,Hh Cheha H,,0.29,16.3,skip,,,E,e,Fluttershy,My Little Pony
+42.png,2,1,,1,0.878,E 1,e,e,0.5799,0.5655,0.2849,182.3,0.5504,area,,0.22,16.3,skip,,,E,e,,
+42.png,2,2,,1,0.918,E,e,e,0.5561,0.5454,0.2687,174.8,0.5529,aN ini gh,hahahah ary,0.584,16.3,skip,,,E,e,,
+43.png,2,1,,1,0.941,E,e,e,0.5834,0.5994,0.3142,166.7,0.5165,te 8 Oe er,Diecast meh ahah oly,0.488,16.3,skip,,,E,e,Atoferatofe Rybak,Mushoku Tensei
+43.png,2,2,2284,0,1.0,2284,normal,normal,0.7159,0.7994,0.5601,143.0,0.5517,Talana Inoue,Lycoris Recoll eos,0.44,24.17,skip,,,2284,normal,,
+44.png,2,1,,1,0.918,E,e,e,0.6227,0.6543,0.3681,165.6,0.5849,Lsatatats,thahahah aly,0.635,16.3,skip,,,E,e,,
+44.png,2,2,,1,0.918,E,e,e,0.5201,0.4879,0.2276,176.5,0.5189,hah aohaha y,,0.14,16.3,skip,,,E,e,Fuyumi Todoroki,My Hero Academia
+45.png,2,1,2072,0,1.0,2072,normal,normal,0.7003,0.8395,0.6289,101.8,0.5258,,,0.0,24.72,skip,,low_ocr|frame_disagrees_with_badge,2072,normal,,
+45.png,2,2,,1,0.0,,e,e,0.6054,0.6185,0.332,172.8,0.543,Aesoiteih A,C LE,0.352,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+46.png,2,1,,1,0.941,E,e,e,0.5619,0.5745,0.2923,163.9,0.547,Ohana,TNAN AN AN,0.39,16.3,skip,,,E,e,Gorgon,Fate Series
+46.png,2,2,,1,0.618,E 7,e,e,0.5667,0.5855,0.3018,161.6,0.5684,es Ne,alaNaaitar a i,0.215,16.3,skip,,,E,e,,
+47.png,2,1,99,0,1.0,99,normal,normal,0.7842,0.8938,0.7358,122.5,0.5425,een,,0.58,42.16,skip,,low_ocr|frame_disagrees_with_badge,99,normal,,
+47.png,2,2,,1,0.0,,e,e,0.5698,0.5894,0.3052,161.9,0.5517,RED oh,thal Veh aha,0.294,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Tweyen,Granblue Fantasy
+48.png,2,1,,1,0.727,E 7,e,e,0.5354,0.5195,0.2494,172.4,0.4785,l Abe ely,,0.37,16.3,skip,,,E,e,,
+48.png,2,2,,1,0.941,E,e,e,0.561,0.5633,0.283,169.2,0.4975,iL ral,,0.38,16.3,skip,,,E,e,,
+49.png,2,1,,1,0.697,E 7,e,e,0.5436,0.5386,0.2635,168.9,0.5149,Meter lt,livaWavarar,0.325,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Ryousuke Kaga,"So, I Can't Play H?"
+49.png,2,2,,1,0.0,,e,e,0.5973,0.6223,0.3356,164.6,0.545,ORD,hahahaha,0.28,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+50.png,2,1,508,0,1.0,508,normal,normal,0.7147,0.8475,0.6436,106.6,0.4341,NOUN e,ees,0.5,32.78,skip,,low_ocr|frame_disagrees_with_badge,508,normal,,
+50.png,2,2,,1,0.047,7,e,e,0.5481,0.5636,0.2833,159.2,0.5929,ets,mah ohana,0.23,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Fuyutsuki-san,The Ice Guy and His Cool Female Colleague
+51.png,2,1,,1,0.918,E,e,e,0.5507,0.545,0.2684,171.0,0.5416,mba ahah at,,0.365,16.3,skip,,low_ocr,E,e,,
+51.png,2,2,,1,0.094,E,e,e,0.5679,0.5653,0.2846,173.4,0.5495,5 4 asa,TREY mah ah ah aly,0.459,16.3,skip,,low_ocr,E,e,,
+52.png,2,1,1695,0,1.0,1695,normal,normal,0.7099,0.8525,0.653,99.1,0.4695,nagiclet rhe,,0.37,25.87,skip,,,1695,normal,Liara Ainsbach Fernot Aries,The Stigma Magic of the Slave Trader and the Degenerate Beautiful Girls
+52.png,2,2,611,0,1.0,611,normal,normal,0.7375,0.8537,0.6551,119.2,0.4599,,,0.0,31.72,skip,,,611,normal,,
+53.png,2,1,,1,0.918,E,e,e,0.5503,0.5381,0.2632,174.2,0.5286,,,0.0,16.3,skip,,,E,e,,
+53.png,2,2,,1,0.918,E,e,e,0.6189,0.6371,0.3503,172.6,0.5595,fitter,,0.01,16.3,skip,,,E,e,May,"BOFURI: I Don't Want to Get Hurt, so I'll Max Out My Defense"
+54.png,2,1,,1,0.873,7 E,e,e,0.603,0.6284,0.3416,165.5,0.5877,NAN AN ah a st,,0.542,16.3,skip,,,E,e,,
+54.png,2,2,2266,0,1.0,2266,normal,normal,0.7033,0.8371,0.6245,105.9,0.4273,x rr Nier Dy,NieR R piicant add,0.484,24.21,skip,,,2266,normal,,
+55.png,2,1,1690,0,1.0,1690,normal,normal,0.7684,0.8985,0.7457,106.7,0.576,werteen Gling Slane for,MylVevel,0.385,25.89,skip,,,1690,normal,Shalsha,I've Been Killing Slimes for 300 Years and Maxed Out My Level
+55.png,2,2,1872,0,1.0,1872,normal,normal,0.687,0.8225,0.5986,104.4,0.4673,r Prony Py,Fos,0.417,25.31,skip,,,1872,normal,,
+56.png,2,1,1613,0,1.0,1613,normal,normal,0.7305,0.8591,0.6654,109.7,0.5457,I aaaton,,0.41,26.16,skip,,,1613,normal,,
+56.png,2,2,,1,0.941,E,e,e,0.5294,0.5125,0.2444,171.4,0.5068,1D ease,hahahah on SSS,0.418,16.3,skip,,,E,e,Kayo Hinazuki,ERASED
+57.png,2,1,2164,0,1.0,2164,normal,normal,0.7279,0.859,0.6653,107.7,0.4996,D Android 17,Dragon Ball 5,0.599,24.47,skip,,,2164,normal,,
+57.png,2,2,,1,0.786,E 7,e,e,0.5362,0.5277,0.2553,168.9,0.4958,la ay a aly a a,,0.204,16.3,skip,,,E,e,,
+58.png,2,1,2345,0,1.0,2345,normal,normal,0.7565,0.8839,0.715,109.6,0.3761,,,0.0,24.01,skip,,,2345,normal,Ryoma Hoshi,Danganronpa Series
+58.png,2,2,,1,0.893,E 7,e,e,0.5904,0.5945,0.3097,174.8,0.5642,NANANAN on,7,0.39,16.3,skip,,,E,e,,
+59.png,2,1,,1,0.851,E 4,e,e,0.5583,0.5579,0.2787,170.0,0.5009,fe oee e,vi Chihahaty,0.407,16.3,skip,,,E,e,,
+59.png,2,2,1630,0,1.0,1630,normal,normal,0.7041,0.8293,0.6106,112.2,0.3762,eZ Oow,,0.35,26.1,skip,,,1630,normal,Hanasaki Miyabi,HoloStars
+60.png,2,1,,1,0.941,E,e,e,0.5735,0.5846,0.301,167.3,0.523,i,J,0.527,16.3,skip,,,E,e,,
+60.png,2,2,2095,0,1.0,2095,normal,normal,0.7195,0.8571,0.6617,102.8,0.3973,SSS Class,nm,0.335,24.66,skip,,,2095,normal,,
+61.png,2,1,,1,0.918,E,e,e,0.5621,0.5561,0.2772,173.8,0.5083,TV AN AN AN AN,,0.21,16.3,skip,,,E,e,Chocolove McDonell,Shaman King
+61.png,2,2,,1,0.918,E,e,e,0.5976,0.6273,0.3405,162.0,0.5725,,,0.0,16.3,skip,,,E,e,,
+62.png,2,1,1754,0,1.0,1754,normal,normal,0.693,0.8226,0.5988,108.8,0.4132,ea,,0.39,25.68,skip,,,1754,normal,,
+62.png,2,2,2328,0,1.0,2328,normal,normal,0.6452,0.7619,0.5025,115.2,0.5874,n ct,Sg pil,0.217,24.06,skip,,,2328,normal,Doppio Dropscythe,Nijisanji
+63.png,2,1,1672,0,1.0,1672,normal,normal,0.709,0.8338,0.6185,112.7,0.4479,,,0.0,25.95,skip,,low_ocr|frame_disagrees_with_badge,1672,normal,,
+63.png,2,2,,1,0.507,7 1,e,e,0.555,0.551,0.2732,171.1,0.4886,oe,a IR raNavas i,0.393,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+64.png,2,1,,1,0.918,E,e,e,0.5933,0.5904,0.3061,179.2,0.5543,1 samevnces 1,Maratea ITNANAN ANG rt aai,0.236,16.3,skip,,,E,e,Samekichi,Wadanohara and the Great Blue Sea
+64.png,2,2,,1,0.918,E,e,e,0.6322,0.6534,0.3672,173.3,0.5637,,,0.0,16.3,skip,,,E,e,,
+65.png,2,1,3250,0,1.0,3250,normal,normal,0.746,0.8744,0.6957,109.3,0.3489,,,0.0,22.14,skip,,,3250,normal,,
+65.png,2,2,,1,0.918,E,e,e,0.6155,0.6302,0.3434,173.9,0.551,Ay scivsisrd,,0.24,16.3,skip,,,E,e,Ras Elclare,Epic Seven
+66.png,2,1,,1,0.918,E,e,e,0.6085,0.6353,0.3485,165.7,0.5555,hahahaha,,0.26,16.3,skip,,,E,e,,
+66.png,2,2,1650,0,1.0,1650,normal,normal,0.7346,0.8475,0.6436,121.7,0.5089,ee,,0.65,26.03,skip,,,1650,normal,,
+67.png,2,1,,1,0.0,,e,e,0.5733,0.5856,0.3019,166.6,0.5349,e Ee ee,TN ANAL hy ary,0.34,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Amyu,The Reincarnation of the Strongest Exorcist in Another World
+67.png,2,2,,1,0.918,E,e,e,0.5698,0.5813,0.2981,166.3,0.5065,i,th Val a ITNANANANG D eae,0.383,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+68.png,2,1,,1,0.341,4,e,e,0.5519,0.5595,0.28,164.3,0.5227,i,,0.83,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+68.png,2,2,707,0,1.0,707,normal,normal,0.6346,0.7705,0.5152,101.3,0.5339,,,0.0,30.89,skip,,low_ocr|frame_disagrees_with_badge,707,normal,Luke Davis,Nerd Project
+69.png,2,1,,1,0.941,E,e,e,0.5849,0.5984,0.3132,168.5,0.5218,firaratatas,ithah ah ah ale,0.637,16.3,skip,,,E,e,,
+69.png,2,2,1978,0,1.0,1978,normal,normal,0.6477,0.7809,0.5309,104.1,0.5191,identity V a,d 4 am,0.624,24.99,skip,,,1978,normal,,
+70.png,2,1,,1,0.941,E,e,e,0.5232,0.5091,0.242,168.3,0.4971,,,0.0,16.3,skip,,,E,e,Mrs. Lim,Learning the Hard Way
+70.png,2,2,,1,0.918,E,e,e,0.6227,0.6542,0.3681,165.6,0.5849,Lsatatats,thahahah aly,0.635,16.3,skip,,,E,e,,
+71.png,2,1,,1,0.918,E,e,e,0.5728,0.5905,0.3062,163.6,0.5244,Miheast Lirumteersts 1,1 Raa mah ahah oy,0.376,16.3,skip,,,E,e,,
+71.png,2,2,247,0,1.0,247,normal,normal,0.6767,0.7976,0.5571,114.5,0.4556,Oo ag ode,e es,0.418,36.92,skip,,,247,normal,Kotori Monou,X/1999
+72.png,2,1,3066,0,1.0,3066,normal,normal,0.6999,0.8333,0.6177,106.1,0.5149,Sena,,0.02,22.48,skip,,,3066,normal,,
+72.png,2,2,1043,0,1.0,1043,normal,normal,0.7427,0.8734,0.6935,107.7,0.4488,sell,,0.3,28.66,skip,,,1043,normal,,
+73.png,2,1,,1,0.0,,e,e,0.5681,0.5736,0.2916,169.1,0.494,mhvanah al fr,,0.11,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Zoey,Noble Reincarnation: Born Blessed So I'll Obtain Ultimate Power
+73.png,2,2,2373,0,1.0,2373,normal,normal,0.6849,0.8009,0.5625,118.4,0.4485,,,0.0,23.95,skip,,low_ocr|frame_disagrees_with_badge,2373,normal,,
+74.png,2,1,,1,0.813,4 E,e,e,0.5981,0.6136,0.3273,170.1,0.5202,Mest,thehah ah ay,0.423,16.3,skip,,,E,e,,
+74.png,2,2,,1,0.918,E,e,e,0.5654,0.5467,0.2698,181.2,0.5287,IN 1 REE I e,anal al,0.54,16.3,skip,,,E,e,Misaki Nakahara,Welcome To The N.H.K
+75.png,2,1,2052,0,1.0,2052,normal,normal,0.6709,0.8025,0.565,106.6,0.5387,,,0.0,24.78,skip,,,2052,normal,,
+75.png,2,2,100,0,1.0,100,normal,normal,0.7157,0.8487,0.6458,106.5,0.4375,,,0.0,42.1,skip,,,100,normal,,
+76.png,2,1,1835,0,1.0,1835,normal,normal,0.7451,0.8535,0.6549,125.1,0.5754,tovelliveliSenes,x,0.405,25.42,skip,,,1835,normal,Kanan Matsuura,Love Live! Series
+76.png,2,2,537,0,1.0,537,normal,normal,0.7511,0.8889,0.7253,101.5,0.4932,eS,,0.19,32.46,skip,,,537,normal,,
+77.png,2,1,1557,0,1.0,1557,normal,normal,0.7302,0.874,0.6948,97.6,0.5066,ssoult Lily Bouquet,,0.723,26.36,skip,,,1557,normal,,
+77.png,2,2,1065,0,1.0,1065,normal,normal,0.7267,0.8558,0.6591,109.3,0.3361,,,0.0,28.54,skip,,,1065,normal,9A-91,Girls' Frontline
+78.png,2,1,,1,0.918,E,e,e,0.561,0.5538,0.2754,174.1,0.4776,AU LY,th vis hah aly,0.206,16.3,skip,,,E,e,,
+78.png,2,2,1754,0,1.0,1754,normal,normal,0.6113,0.7485,0.4834,98.4,0.5899,,,0.0,25.68,skip,,,1754,normal,,
+79.png,2,1,2646,0,1.0,2646,normal,normal,0.6333,0.7505,0.4862,113.8,0.5399,,,0.0,23.32,skip,,,2646,normal,Rinne Amagi,Ensemble Stars!
+79.png,2,2,,1,0.941,E,e,e,0.5486,0.543,0.2669,170.3,0.4883,NO oie t,banana ay,0.257,16.3,skip,,,E,e,,
+80.png,2,1,2,0,0.247,2 7,normal,normal,0.6954,0.8217,0.5973,111.3,0.5281,S NNN oe,,0.26,27.25,skip,,low_ocr,1140,normal,,
+80.png,2,2,,1,0.918,E,e,e,0.6004,0.6164,0.33,170.2,0.5167,ta,Seta navaites te,0.357,16.3,skip,,low_ocr,E,e,Minami Sakurai,The Irregular at Magic High School
+81.png,2,1,101,0,1.0,101,normal,normal,0.7799,0.9024,0.7543,112.2,0.5616,eo 6Gsi a,7 DELTARUNE Fu,0.546,42.04,skip,,low_ocr,101,normal,,
+81.png,2,2,,1,0.047,E,e,e,0.5624,0.58,0.2971,161.3,0.5728,Wl Mi,,0.085,16.3,skip,,low_ocr,E,e,,
+82.png,2,1,,1,0.918,E,e,e,0.5473,0.525,0.2533,178.7,0.5875,,,0.0,16.3,skip,,,E,e,Kurou Kiryuu,Ensemble Stars!
+82.png,2,2,1633,0,1.0,1633,normal,normal,0.7442,0.8757,0.6982,106.9,0.3609,ASCOT STOIC,aaicieedars Ctlihe ae Ae a,0.416,26.09,skip,,,1633,normal,,
+83.png,2,1,,1,0.941,E,e,e,0.5379,0.5423,0.2664,162.6,0.5219,Oe ate,,0.323,16.3,skip,,,E,e,,
+83.png,2,2,466,0,1.0,466,normal,normal,0.6189,0.7282,0.4559,117.4,0.5725,,,0.0,33.28,skip,,,466,normal,Kazuki Kuwanomi,Plastic Memories
+84.png,2,1,4016,0,1.0,4016,normal,normal,0.8295,0.9422,0.8462,115.2,0.5365,Roronoa Zoro,,0.71,20.93,skip,,,4016,normal,,
+84.png,2,2,,1,0.918,E,e,e,0.5503,0.5436,0.2673,171.4,0.4851,nie Ch al a 4,,0.414,16.3,skip,,,E,e,,
+85.png,2,1,2173,0,1.0,2173,normal,normal,0.6804,0.8143,0.5847,105.3,0.4234,Oex,,0.42,24.45,skip,,,2173,normal,Romani Archaman,Fate Series
+85.png,2,2,1553,0,1.0,1553,normal,normal,0.724,0.8566,0.6607,106.6,0.418,ad,,0.515,26.38,skip,,,1553,normal,,
+86.png,2,1,2954,0,1.0,2954,normal,normal,0.6752,0.8145,0.585,101.2,0.4561,Musclesin,ees,0.53,22.69,skip,,,2954,normal,,
+86.png,2,2,,1,0.873,7 E,e,e,0.5898,0.6096,0.3235,166.0,0.5353,,,0.0,16.3,skip,,,E,e,Artoria Pendragon Alter,Fate Series
+87.png,2,1,,1,0.918,E,e,e,0.5322,0.5273,0.255,166.0,0.5171,IM CWA i,,0.65,16.3,skip,,,E,e,,
+87.png,2,2,1605,0,1.0,1605,normal,normal,0.6518,0.7904,0.5456,100.6,0.56,,,0.0,26.19,skip,,,1605,normal,,
+88.png,2,1,,1,0.596,1 E,e,e,0.5413,0.5213,0.2507,175.9,0.4629,,,0.0,16.3,claim,2,,E,e,Natsuki Haibara,Haibara's Teenage New Game+
+88.png,2,2,20,0,1.0,20,normal,normal,0.6622,0.7277,0.4552,150.6,0.5457,aes,,0.34,51.33,claim,2,,20,normal,,
+89.png,2,1,,1,0.918,E,e,e,0.5342,0.5156,0.2466,173.4,0.4806,,,0.0,16.3,skip,,,E,e,,
+89.png,2,2,,1,0.918,E,e,e,0.5853,0.6007,0.3153,167.5,0.5125,,,0.0,16.3,skip,,,E,e,Shidou Itsuka & Tohka Yatogami,Date a Live
+90.png,2,1,1753,0,1.0,1753,normal,normal,0.6733,0.8143,0.5846,100.0,0.5237,Denji Pochita,,0.797,25.68,skip,,,1753,normal,,
+90.png,2,2,,1,0.918,E,e,e,0.5826,0.5815,0.2983,175.9,0.5531,1 eReslei lh,Aan hahahah ary,0.313,16.3,skip,,,E,e,,
+91.png,2,1,,1,0.918,E,e,e,0.5498,0.5398,0.2644,172.9,0.5017,hahahah aly,,0.07,16.3,skip,,,E,e,Mafumafu,Utaite
+91.png,2,2,2535,0,1.0,2535,normal,normal,0.6445,0.7461,0.4801,125.2,0.5396,,,0.0,23.57,skip,,,2535,normal,,
+cards.png,2,1,,1,0.918,E,e,e,0.6082,0.5969,0.3119,187.0,0.5563,Gh NONENCNT,A,0.57,16.3,skip,,,E,e,,
+cards.png,2,2,1931,0,1.0,1931,normal,normal,0.7161,0.8136,0.5835,132.9,0.5914,,,0.0,25.13,skip,,,1931,normal,,
+cards10.png,2,1,,1,0.918,E,e,e,0.5971,0.608,0.322,172.5,0.5189,anata,hah oh ah aly,0.585,16.3,skip,,,E,e,,
+cards10.png,2,2,,1,0.856,4 7 E,e,e,0.5449,0.5389,0.2637,169.7,0.5612,iTNAN AN aa aly,,0.302,16.3,skip,,,E,e,Delta,Boruto: Naruto Next Generations
+cards11.png,2,1,,1,0.54,4,e,e,0.5987,0.638,0.3512,156.8,0.5849,,,0.0,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards11.png,2,2,,1,0.918,E,e,e,0.6152,0.6374,0.3507,169.6,0.5365,lah eaves aly ci,oi thih ah aly,0.312,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards12.png,2,1,,1,0.941,E,e,e,0.5622,0.5921,0.3076,154.7,0.6053,ee ah,,0.53,16.3,skip,,,E,e,Rom,Hyperdimension Neptunia
+cards12.png,2,2,444,0,1.0,444,normal,normal,0.748,0.8594,0.666,122.7,0.4484,Popplio,Fos,0.587,33.55,skip,,,444,normal,,
+cards13.png,2,1,,1,0.54,7,e,e,0.6188,0.6394,0.3526,171.3,0.5665,,,0.0,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards13.png,2,2,,1,0.54,7,e,e,0.5917,0.618,0.3315,162.7,0.5328,ahahaha Yap,,0.43,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,Seimei,Senran Kagura
+cards14.png,2,1,1728,0,1.0,1728,normal,normal,0.7351,0.8624,0.6719,110.6,0.3853,pee,,0.26,25.76,skip,,,1728,normal,,
+cards14.png,2,2,1610,0,1.0,1610,normal,normal,0.6441,0.7641,0.5057,112.9,0.5166,Rlhe Deviis a,,0.565,26.17,skip,,,1610,normal,,
+cards15.png,2,1,,1,0.801,E 7,e,e,0.5925,0.6152,0.3289,164.9,0.5544,ria Ms,,0.325,16.3,skip,,low_ocr,E,e,Pig,Minecraft
+cards15.png,2,2,,1,0.504,4 E,e,e,0.6355,0.6599,0.3742,172.0,0.589,TN ANNAN A,,0.373,16.3,skip,,low_ocr,E,e,,
+cards16.png,2,1,,1,0.918,E,e,e,0.6225,0.6566,0.3706,164.1,0.5693,ee Ver,1 PRATT i Veh AaNn ah a y,0.35,16.3,skip,,low_ocr,E,e,,
+cards16.png,2,2,,1,0.151,E 7,e,e,0.5799,0.6012,0.3158,163.1,0.5236,deceeed tSetetiag Li,NAN AN A eee CO,0.418,16.3,skip,,low_ocr,E,e,Julius Juukulius,Re:Zero - Starting Life in Another World
+cards17.png,2,1,,1,0.832,4 E,e,e,0.5561,0.5719,0.2901,160.9,0.5442,ly,Lbaritatas hahahaha,0.345,16.3,skip,,,E,e,,
+cards17.png,2,2,1957,0,1.0,1957,normal,normal,0.6422,0.7588,0.498,115.0,0.4679,,,0.0,25.05,skip,,,1957,normal,,
+cards18.png,2,1,,1,0.941,E,e,e,0.5896,0.6061,0.3203,167.8,0.5532,Nah ah ah ay,,0.623,16.3,skip,,,E,e,Castform,Pokemon
+cards18.png,2,2,1804,0,1.0,1804,normal,normal,0.6666,0.7938,0.551,109.5,0.4957,FulKasuni,Samurai Champloo,0.553,25.52,skip,,,1804,normal,,
+cards19.png,2,1,1908,0,1.0,1908,normal,normal,0.7437,0.8755,0.6977,106.7,0.3902,,,0.0,25.2,skip,,,1908,normal,,
+cards19.png,2,2,5287,0,1.0,5287,normal,normal,0.7404,0.8709,0.6886,107.8,0.3779,apanyscueiads i,ONE NSS,0.305,20.1,skip,,,5287,normal,Tanjirou Kamado,Demon Slayer: Kimetsu no Yaiba
+cards2.png,2,1,1874,0,1.0,1874,normal,normal,0.7221,0.8578,0.6629,104.3,0.4604,510,a ae 4,0.657,25.3,skip,,,1874,normal,,
+cards2.png,2,2,1931,0,1.0,1931,normal,normal,0.7145,0.8447,0.6384,108.6,0.3843,Zenocbia,fis ere,0.225,25.13,skip,,,1931,normal,,
+cards20.png,2,1,2209,0,1.0,2209,normal,normal,0.6446,0.7855,0.538,98.6,0.5532,I ees,ilears of Themis,0.6,24.36,skip,,,2209,normal,,
+cards20.png,2,2,2975,0,1.0,2975,normal,normal,0.7189,0.8408,0.6312,114.9,0.5057,,,0.0,22.65,skip,,,2975,normal,,
+cards21.png,2,1,,1,0.055,4 E,e,e,0.5573,0.567,0.2861,164.4,0.5489,1 h,thabahah ary,0.56,16.3,skip,,low_ocr,E,e,Shizuku,The Elusive Samurai
+cards21.png,2,2,,1,0.941,E,e,e,0.5492,0.5419,0.266,171.4,0.4843,IN NA,4 Md as its,0.484,16.3,skip,,low_ocr,E,e,,
+cards22.png,2,1,1237,0,1.0,1237,normal,normal,0.7054,0.8361,0.6226,108.2,0.4949,State Members,eee,0.753,27.68,skip,,,1237,normal,,
+cards22.png,2,2,,1,0.918,E,e,e,0.5434,0.5291,0.2564,173.5,0.4735,Anan ah a gt,fy,0.29,16.3,skip,,,E,e,Yori Asanagi,Whispering You A Love Song
+cards23.png,2,1,,1,0.941,E,e,e,0.5293,0.5246,0.2531,165.1,0.5674,1 rh meme ly,,0.318,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards23.png,2,2,,1,0.54,7,e,e,0.5416,0.5388,0.2637,167.3,0.511,hah oh ah a,,0.565,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards24.png,2,1,609,0,1.0,609,normal,normal,0.7975,0.9245,0.804,106.6,0.473,Monster Eater,,0.2,31.74,skip,,,609,normal,Elysia,Monster Eater
+cards24.png,2,2,,1,0.918,E,e,e,0.5679,0.5749,0.2927,168.2,0.5495,,,0.0,16.3,skip,,,E,e,,
+cards25.png,2,1,,1,0.941,E,e,e,0.592,0.6061,0.3203,169.6,0.5101,talons,,0.16,16.3,skip,,low_ocr,E,e,,
+cards25.png,2,2,,1,0.004,7 E,e,e,0.5593,0.5617,0.2817,168.7,0.4964,,,0.0,16.3,skip,,low_ocr,E,e,Juuzou Suzuya,Tokyo Ghoul
+cards26.png,2,1,1854,0,1.0,1854,normal,normal,0.6925,0.8052,0.5694,121.1,0.4185,ee,,0.28,25.36,skip,,,1854,normal,,
+cards26.png,2,2,2433,0,1.0,2433,normal,normal,0.7192,0.8383,0.6267,117.0,0.527,f Gamma,wr ThelEminence in poke nr 7 wt Nel,0.278,23.8,skip,,,2433,normal,,
+cards27.png,2,1,2003,0,1.0,2003,normal,normal,0.6866,0.8168,0.5889,108.2,0.4034,eee,,0.33,24.92,skip,,,2003,normal,Callisto Regulus,Villains Are Destined To Die
+cards27.png,2,2,1044,0,1.0,1044,normal,normal,0.6198,0.7435,0.4765,108.1,0.6002,Kamitsubaki City,UndersConstruction Ls,0.845,28.65,skip,,,1044,normal,,
+cards28.png,2,1,2671,0,1.0,2671,normal,normal,0.6938,0.8251,0.6031,107.6,0.3988,e Oe,,0.33,23.27,skip,,low_ocr,2671,normal,,
+cards28.png,2,2,,1,0.014,7 E,e,e,0.5331,0.5282,0.2557,166.2,0.5263,ei Bk al Ms,,0.383,16.3,skip,,low_ocr,E,e,Aika,My Former Delinquent Stepsister Is A Nursing Mother
+cards3.png,2,1,,1,0.047,44,e,e,0.5351,0.5277,0.2554,167.9,0.5015,,,0.0,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards3.png,2,2,,1,0.918,E,e,e,0.573,0.5743,0.2922,172.4,0.496,Ceweiclsee,,0.415,16.3,skip,,low_ocr|frame_disagrees_with_badge,E,e,,
+cards30.png,2,1,14,0,1.0,14,normal,normal,0.5505,0.5852,0.3015,149.5,0.5619,,,0.0,53.37,claim,1,,14,normal,Bulma,Dragon Ball
+cards30.png,2,2,852,0,1.0,852,normal,normal,0.6246,0.7518,0.488,106.3,0.4563,i henvakura siGude,a tomBais beysit tic J,0.383,29.82,claim,1,,852,normal,,
+cards31.png,2,1,2850,0,1.0,2850,normal,normal,0.6723,0.8026,0.5652,107.6,0.5498,ala,,0.28,22.9,skip,,,2850,normal,,
+cards31.png,2,2,2349,0,1.0,2349,normal,normal,0.7251,0.8565,0.6605,107.6,0.3707,oe,,0.435,24.0,skip,,,2349,normal,Kenpachi Zaraki,Bleach
+cards32.png,2,1,1362,0,1.0,1362,normal,normal,0.6831,0.8179,0.5907,104.8,0.4568,ees,,0.54,27.13,skip,,,1362,normal,,
+cards32.png,2,2,,1,0.941,E,e,e,0.5869,0.6045,0.3188,166.6,0.5393,fr,ly My i,0.34,16.3,skip,,,E,e,,
+cards33.png,1,1,,1,0.047,4,e,e,0.5644,0.5812,0.298,162.3,0.3485,oe,,0.412,16.3,claim,1,low_ocr|frame_disagrees_with_badge,E,e,,
+cards4.png,2,1,,1,0.012,4 E,e,e,0.5577,0.5697,0.2883,163.3,0.5689,OR eneadh,thah ah ah aly,0.476,16.3,skip,,low_ocr,E,e,Yoosung,Mystic Messenger
+cards4.png,2,2,2511,0,1.0,2511,normal,normal,0.7585,0.8898,0.7272,106.3,0.5791,c Oe,,0.44,23.62,skip,,low_ocr,2511,normal,,
+cards5.png,2,1,,1,0.918,E,e,e,0.5851,0.5978,0.3127,168.9,0.5367,Eararates,I avaas i,0.245,16.3,skip,,,E,e,,
+cards5.png,2,2,,1,0.918,E,e,e,0.578,0.606,0.3202,159.0,0.5547,1 Saray mi,,0.333,16.3,skip,,,E,e,Suzuhara Lulu,Nijisanji
+cards6.png,2,1,2330,0,1.0,2330,normal,normal,0.6864,0.8025,0.565,118.4,0.5716,ee,Stars,0.45,24.05,skip,,,2330,normal,,
+cards6.png,2,2,1985,0,1.0,1985,normal,normal,0.7566,0.8799,0.7068,113.0,0.3989,,,0.0,24.97,skip,,,1985,normal,,
+cards7.png,2,1,,1,0.016,7 E,e,e,0.5756,0.5765,0.2941,173.2,0.4986,hahahah aly,,0.38,16.3,skip,,low_ocr,E,e,Chaco,Fragaria Memories
+cards7.png,2,2,,1,0.918,E,e,e,0.6256,0.6566,0.3707,166.3,0.5831,,,0.0,16.3,skip,,low_ocr,E,e,,
+cards8.png,2,1,,1,0.941,E,e,e,0.562,0.5665,0.2856,168.2,0.5002,Jodeeme Ard Aled,vi With ah aly,0.391,16.3,skip,,,E,e,,
+cards8.png,2,2,1029,0,1.0,1029,normal,normal,0.6653,0.7956,0.5539,107.2,0.533,gee,,0.435,28.74,skip,,,1029,normal,Leo,Love Unholyc
+cards9.png,2,1,2886,0,1.0,2886,normal,normal,0.6807,0.8163,0.588,104.1,0.5311,,,0.0,22.82,skip,,,2886,normal,,
+cards9.png,2,2,2527,0,1.0,2527,normal,normal,0.6856,0.8083,0.5746,113.6,0.6008,fore Piece,od aw Fo,0.444,23.59,skip,,,2527,normal,,

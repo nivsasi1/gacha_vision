@@ -146,7 +146,8 @@ nearly everything.
 | stage | file | approach |
 |---|---|---|
 | find cards | `segment.py` | gutter projection, falling back to contours then equal columns |
-| read the badge | `ocr.py` | component analysis → tight glyph crops → Tesseract, confidence-weighted vote |
+| fallback badge read | `ocr.py` | tesseract, for fonts the atlas does not know |
+| read the badge | `digits.py` | threshold search scored on badge shape -> glyph atlas, 1-NN |
 | frame | `frame.py` | border saturation decides `NORMAL` vs `E`; badge cross-checks |
 | decide | `rank.py` | weighted score per card, then the policy rules |
 
@@ -197,7 +198,7 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **128 tests**, 127 passing (see Known gaps) |
+| test suite | **134 tests**, 133 passing (see Known gaps) |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
@@ -234,25 +235,39 @@ them, so these numbers are a test, not a memory.
 |---|---|
 | frame (`E` vs numbered), border at `sat_mean` 152.65 | 182/182 = **100%** |
 | **costly errors** — an `E` given a number, or a number lost as `E` | **0/182** |
-| badge OCR, exact value | 139/182 = **76%** |
-| **decision** (action + slots) vs the labels | 90/91 spawns = **99%** |
+| badge digits, exact value | 181/182 = **99%** |
+| **decision** (action + slots) vs the labels | 91/91 spawns = **100%** |
 | — the same corpus if you simply skip everything | 88/91 = **97%** |
+| spawns worth claiming, actually claimed | 3/3 |
 | character name, *correct* | 0/59 = **0%** |
 | character name, produced any text at all | 49/59 = **83%** |
 | character name, string similarity to the truth | **0.18** |
 | series name, string similarity to the truth | **0.07** |
 
-**Read the last three rows before the fourth.** 99% decision accuracy sounds
-strong until you notice that 88 of these 91 spawns should be skipped, so
-doing nothing scores 97%. On the three spawns actually worth claiming this
-catches two, and one of those is a lone-card auto-claim rather than a
-judgement. Treat the decision figure as a regression tripwire, not evidence
-that the ranker works — the corpus does not yet contain enough good cards to
-tell.
+**Read the claim row, not the decision row.** 100% decision accuracy sounds
+strong until you notice that 88 of these 91 spawns should be skipped, so doing
+nothing scores 97%. The row that carries information is the next one: all
+three spawns holding a good card are claimed, with no false claims. That is
+still only three spawns — treat it as a floor that must not drop, not as proof
+the ranker is finished.
 
-Badge misses mostly lose or gain a digit inside a four-digit print — `1609`
-read as `4609`, `2328` as `7328` — and both are junk either way, so the
-decision is unchanged. Two rules that helped:
+The badge reader no longer goes through tesseract on a card it recognises.
+It reads 181 of 182, against 38 of 81 numbered cards before — and the failure
+was never the glyphs, which are crisp white numerals in one fixed font. It was
+that producing a clean crop is the hard part: the plate is semi-transparent
+over the artwork, so its brightness moves card to card, and one global
+threshold either fuses neighbouring digits or dissolves thin ones. `digits.py`
+searches thresholds instead and scores each result against what a badge must
+be — one to four glyphs, equal height, common baseline, evenly spaced — then
+matches each glyph against an atlas built from labelled real cards. Held out
+card by card it reads every glyph in the corpus correctly, and it is around a
+hundred times faster than shelling out to tesseract per candidate crop.
+
+That fix also recovered the corpus's best card: `cards30.png` is print **#14**
+on an uncatalogued frame whose badge tesseract read as empty text. It is now
+read and claimed.
+
+Two rules from the tesseract era still apply on the fallback path:
 
 * **A lone digit is the hook icon, not a print.** Of 27 single-digit reads,
   *none* was a genuine print — 19 of them on `NORMAL` frames, where a number
@@ -297,10 +312,6 @@ Measured on the 182 cards: frame 160/182 → **182/182**, and the costly errors
 The badge is no longer authoritative on whether a number exists; it is still
 the only thing that reads the digits. `test_real_corpus.py` holds both floors.
 
-The one remaining wrong decision is `cards30.png`, whose badge read as empty
-text — and that is the card wearing the frame that matches neither `E` nor
-`NORMAL`, which the `always_claim_unknown_frame` rule would claim anyway if
-the frame were detected. Detecting it needs more than one example.
 
 * **The border beats the badge, and it is not close.** Border 182/182 against
   badge 160/182, and the border was right in all 22 disagreements. Letting the

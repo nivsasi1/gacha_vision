@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 from .config import Policy, load_watchlist
+from .digits import MIN_TRUSTED_MATCH, read_print_number
 from .frame import frame_from_badge, guess_frame, resolve_frame
 from .models import Card, Decision
 from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name_scored
@@ -49,7 +50,17 @@ def analyze_cards_with_boxes(
     cards: list[Card] = []
     for i, (x, y, w, h) in enumerate(boxes, start=1):
         crop = bgr[y:y + h, x:x + w]
-        badge = read_badge(crop)
+        # The digit atlas reads the game's own badge font. When it is sure,
+        # that is the answer and tesseract is not consulted at all -- it costs
+        # about a second a card and has nothing to add to a clean read. Only
+        # an unsure atlas (an unfamiliar font, or an "E", which has no digits
+        # to match) falls through to it.
+        atlas_no, atlas_conf = read_print_number(crop)
+        if atlas_no is not None and atlas_conf >= MIN_TRUSTED_MATCH:
+            badge = {"print_no": atlas_no, "no_number": False,
+                     "confidence": atlas_conf, "text": str(atlas_no)}
+        else:
+            badge = read_badge(crop)
         pixel_tier, feats = guess_frame(crop)
         feats = dict(
             feats,
