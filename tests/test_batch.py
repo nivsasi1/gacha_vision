@@ -171,3 +171,44 @@ def test_sheet_renders_one_card_per_row(tmp_path):
     assert html.count('class="card"') == 1
     assert 'class="tf"' in html and 'class="tp"' in html
     assert "labels.csv" in html
+
+
+# --- name reporting ------------------------------------------------------
+
+def test_the_name_report_separates_reading_something_from_reading_it_right():
+    """The metric that misled: "read something" scores a smear as a success.
+
+    Both fields below read text on every row, so coverage is 100% either
+    way; only similarity tells them apart.
+    """
+    from gacha_vision.calibrate import name_report
+    good = [{"character": "Bulma", "true_character": "Bulma", "series": "", "name_conf": ""},
+            {"character": "Seras Victoria", "true_character": "Seras Victoria",
+             "series": "", "name_conf": ""}]
+    junk = [{"character": "occ", "true_character": "Yoshiko Tsushima", "series": "",
+             "name_conf": ""},
+            {"character": "OOOH", "true_character": "Hinageshi Usuzumi", "series": "",
+             "name_conf": ""}]
+    g, j = name_report(good)["character"], name_report(junk)["character"]
+    assert g["coverage"] == j["coverage"] == 1.0
+    assert g["mean_similarity"] == 1.0
+    assert j["mean_similarity"] < 0.25
+    assert g["accuracy"] == 1.0 and j["accuracy"] == 0.0
+
+
+def test_the_name_report_runs_on_the_recorded_ground_truth():
+    """Eight real cards whose names were read off a screenshot by eye.
+
+    The only name ground truth that exists, kept so the next attempt at the
+    name reader has something to beat.
+    """
+    from pathlib import Path
+    from gacha_vision.calibrate import name_report, read_csv
+    rows = read_csv(Path(__file__).resolve().parents[1] / "data" / "name_truth_8cards.csv")
+    rep = name_report(rows)
+    assert rep["rows"] == 8
+    assert rep["character"]["labelled"] == 8 and rep["series"]["labelled"] == 8
+    # Not an aspiration -- a record of where this stands. If a future reader
+    # beats it, raise these and keep the ratchet.
+    assert rep["character"]["mean_similarity"] < 0.30
+    assert rep["series"]["mean_similarity"] < 0.20

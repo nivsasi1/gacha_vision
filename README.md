@@ -196,7 +196,7 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **119 tests pass** |
+| test suite | **121 tests pass** |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
@@ -228,8 +228,8 @@ trusting the frame thresholds.
 | **decision** (action + slots) vs the labels | 90/91 spawns = **99%** |
 | frame, `sat_mean` cut at 152.65 | 182/182 = **100%** |
 | badge OCR, exact value | 123/182 = **68%** |
-| character name, read anything at all | 149/182 = **82%** |
-| series name, read anything at all | 74/182 = **41%** |
+| character name, string similarity to the truth | **0.18** |
+| series name, string similarity to the truth | **0.07** |
 
 Read the top row, not the 68%. Most badge misses lose or gain a digit inside
 a four-digit print — `1609` read as `4609`, `2328` as `7328` — and both are
@@ -274,19 +274,53 @@ the frame were detected. Detecting it needs more than one example.
 Mean confidence is 0.72 on correct reads against 0.28 on wrong ones, so the
 confidence figure is a usable review signal on real cards too.
 
-The name reader is the weakest part. It finds *some* text on 82% of cards
-but much of it is garbled: `Popplio`, `Kamitsubaki City` and `Samurai
-Champloo` come through clean, while others land as `hahahah aly`. Series is
-worse than character because the series line is smaller and lower-contrast.
-Nothing depends on these yet — the watchlist is the only consumer, and an
-empty name simply scores as "not on the watchlist" — but they are not
-trustworthy enough to build on. Fill in `true_character` / `true_series` on
-the labelling sheet and `fit` will measure them properly.
+### The name reader does not work
+
+It is not weak, it is broken, and the earlier "reads something on 82% of
+cards" figure was the metric flattering itself — a smear of letters counts
+as a read. Against eight cards whose names were read off a screenshot by
+eye (`data/name_truth_8cards.csv`):
+
+| true character | read | true series | read |
+|---|---|---|---|
+| Yoshiko Tsushima | `occ` | Love Live! Series | `Ox` |
+| Ryukyu | `avatars` | My Hero Academia | `hahahah aly` |
+| Chika Fujiwara | `IA 7` | Kaguya-Sama: Love is War? | — |
+| Pastry Cookie | `BP VOVOVOVE` | Cookie Run | — |
+| Seras Victoria | `Abarat` | HELLSING | — |
+| Moran | — | NIKKE: Goddess of Victory | — |
+| Hinageshi Usuzumi | `OOOH` | Momentary Lily | `toy` |
+| Misono Arisuin | — | SERVAMP | — |
+
+**Zero of sixteen** share meaningful letters with the truth. These are not
+near-misses that better thresholding would sharpen — that is what it looks
+like when Tesseract does not recognise the typeface at all. Scale
+normalisation (the fix that worked for the badge), brightness masking for
+white-on-artwork text, per-line segmentation and confidence-based candidate
+selection were each built and measured against a fixture; none moved it, and
+the fixture reads its own names perfectly at every size, which is itself the
+tell: the difficulty is the game's display font, not the pipeline around it.
+
+Nothing depends on these. The watchlist is the only consumer, and a name
+that matches nothing scores as `fame_default`, so the fame term degrades to
+a constant rather than to a wrong answer. `read_name` still reports its
+text, and now its confidence alongside it, so the sheet shows how little to
+trust it.
+
+Getting it working means one of:
+
+* **Train Tesseract on the game font** — the 182 crops already collected are
+  most of what a `tesstrain` run needs, plus hand-typed labels.
+* **Match the artwork instead of the text** — build a reference library of
+  card images and match crops against it. Robust to the font entirely, but
+  needs the library.
+* **Drop names and set `w_fame` to 0**, redistributing the weight to the
+  print number. Honest, and costs nothing that currently works.
 
 ## Known gaps
 
-* **Name OCR** (above). Needs a tighter crop on the two text lines and
-  probably a per-line pass rather than one `--psm 6` block.
+* **Name OCR** (above). Needs a font-trained model or artwork matching, not
+  tuning; the tuning was tried.
 * **Dropped glyphs.** 41 of the 182 badges came back without the true value
   anywhere among the candidates — usually a four-digit print read as two or
   three digits. Length-first selection picks the best of what is there; it

@@ -61,6 +61,10 @@ class Card:
     # Diagnostics from the vision stage; ignored by ranking.
     ocr_text: str = ""
     ocr_confidence: float = 0.0
+    # Tesseract's mean word confidence on the name block. Reported, never
+    # acted on: the name text itself has never once been right (see
+    # ocr.read_name), so this exists to make that visible on the sheet.
+    name_confidence: float = 0.0
     # Whether the print number is solid enough to act on. The vision stage
     # decides this from OCR confidence; the ranker only reads it, so the
     # question "is this legible?" stays separate from "is this worth taking?".

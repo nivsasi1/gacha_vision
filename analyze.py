@@ -10,7 +10,7 @@ import numpy as np
 from .config import Policy, load_watchlist
 from .frame import frame_from_badge, guess_frame
 from .models import Card, Decision
-from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name
+from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name_scored
 from .rank import decide
 from .segment import find_cards
 
@@ -56,9 +56,10 @@ def analyze_cards_with_boxes(
         tier = frame_from_badge(badge["print_no"], badge["no_number"])
         pixel_tier, feats = guess_frame(crop)
         feats = dict(feats, pixel_frame=pixel_tier.value)
-        character, series = ("", "")
+        character, series, name_conf = ("", "", 0.0)
         if read_names:
-            character, series = split_name(read_name(crop))
+            raw, name_conf = read_name_scored(crop)
+            character, series = split_name(raw)
         cards.append(
             Card(
                 slot=i,
@@ -68,6 +69,7 @@ def analyze_cards_with_boxes(
                 character=character,
                 series=series,
                 ocr_text=badge["text"],
+                name_confidence=round(name_conf, 3),
                 ocr_confidence=round(badge["confidence"], 3),
                 print_trusted=badge["confidence"] >= MIN_TRUSTED_CONFIDENCE,
                 frame_features=feats,

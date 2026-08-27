@@ -173,18 +173,22 @@ def ocr_report(rows: list[dict]) -> dict:
 def name_report(rows: list[dict]) -> dict:
     """How the character/series OCR is doing.
 
-    Two measures, because the name labels are optional and mostly absent:
+    Three measures, because the name labels are optional and mostly absent:
 
       * *coverage* needs no labels at all -- it just counts how often the
-        reader produced any text. A blank means the name block was never
-        located, which is a different (and worse) failure than a misread.
-      * *accuracy* is only computed over rows where ``true_character`` /
-        ``true_series`` were filled in. Exact match is too harsh a bar for
-        OCR, so a near-match is counted separately: matching the watchlist
-        is what these names are for, and "Dragon Ball 5" still finds
-        "Dragon Ball".
+        reader produced any text. Treat it as a floor, not a score: on real
+        cards it reads 82% while being wrong essentially every time, which
+        is precisely how a "did it produce output" metric misleads.
+      * *mean similarity* is the honest headline wherever labels exist. A
+        garbled read scores near zero where "read something" scores one.
+      * *accuracy* counts exact and near matches separately. Exact match is
+        too harsh a bar for OCR, and matching the watchlist is what these
+        names are for, so "Dragon Ball 5" still finds "Dragon Ball".
     """
-    out: dict = {"rows": len(rows)}
+    out: dict = {"rows": len(rows), "mean_conf": None}
+    confs = [_f(r, "name_conf") for r in rows if (r.get("name_conf") or "").strip()]
+    if confs:
+        out["mean_conf"] = round(sum(confs) / len(confs), 3)
     for field in ("character", "series"):
         got = [(r.get(field) or "").strip() for r in rows]
         read = sum(1 for g in got if g)
@@ -197,10 +201,16 @@ def name_report(rows: list[dict]) -> dict:
                 exact += 1
             elif gn and difflib.SequenceMatcher(None, gn, wn).ratio() >= _NAME_CLOSE:
                 close += 1
+        # Mean similarity needs no labels beyond the ones present and is the
+        # honest headline: "read something" counts a smear of letters as a
+        # success, and on real cards almost every read is exactly that.
+        sims = [difflib.SequenceMatcher(None, normalise(g), normalise(w)).ratio()
+                for g, w in pairs]
         out[field] = {
             "read_something": read,
             "coverage": round(read / len(rows), 3) if rows else None,
             "labelled": len(pairs),
+            "mean_similarity": round(sum(sims) / len(sims), 3) if sims else None,
             "exact": exact,
             "close": close,
             "accuracy": round((exact + close) / len(pairs), 3) if pairs else None,
@@ -293,6 +303,8 @@ def build_sheet(rows: list[dict], out_html: str | Path, fields: list[str]) -> in
   <div class="names">
     <div><span class="k">character</span> {_name_cell(r.get('character'))}</div>
     <div><span class="k">series</span> {_name_cell(r.get('series'))}</div>
+    <div class="k" style="margin-top:3px">text ocr confidence {_f(r,'name_conf'):.0%}
+      — these names are unreliable, see the README</div>
   </div>
   <label>true print (number or E)<input class="tp" value="{html.escape(str(got))}"></label>
   <label>true frame<select class="tf">{tiers}</select></label>

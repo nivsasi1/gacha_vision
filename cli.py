@@ -271,15 +271,18 @@ def cmd_fit(a: argparse.Namespace) -> int:
 
     n = name_report(rows)
     print(f"\n-- character / series OCR --")
+    if n.get("mean_conf") is not None:
+        print(f"  mean tesseract confidence on the name block: {n['mean_conf']:.0%}")
     for field in ("character", "series"):
         d = n[field]
         line = f"  {field:<10} read something on {d['read_something']}/{n['rows']}"
         if d["coverage"] is not None:
-            line += f" = {d['coverage']:.0%}"
+            line += f" = {d['coverage']:.0%}  (a smear of letters counts here)"
         print(line)
         if d["labelled"]:
-            print(f"             vs labels: {d['exact']} exact + {d['close']} close "
-                  f"of {d['labelled']} = {d['accuracy']:.0%}")
+            print(f"             vs {d['labelled']} labels: similarity "
+                  f"{d['mean_similarity']:.2f}, {d['exact']} exact + {d['close']} close "
+                  f"= {d['accuracy']:.0%}")
             for m in d["misses"]:
                 print(f"               want {m['want']!r} got {m['got']!r}")
         else:

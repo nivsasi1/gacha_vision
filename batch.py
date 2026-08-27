@@ -43,7 +43,7 @@ CSV_FIELDS = [
     "image", "n_cards", "slot",
     "print_no", "no_number", "ocr_conf", "ocr_text",
     "frame", "pixel_frame", "ornateness", "hue_entropy", "hue_diversity", "sat_mean", "colored_frac",
-    "character", "series", "score_total", "action", "chosen_slots", "flags",
+    "character", "series", "name_conf", "score_total", "action", "chosen_slots", "flags",
     # left blank for you to fill in when labelling:
     "true_print", "true_frame", "true_character", "true_series",
 ]
@@ -115,6 +115,7 @@ def analyze_one(
                 "colored_frac": f.get("colored_frac", 0.0),
                 "character": card.character[:40],
                 "series": card.series[:40],
+                "name_conf": round(card.name_confidence, 3),
                 "score_total": by_slot[card.slot].total if card.slot in by_slot else "",
                 "action": decision.action.value,
                 "chosen_slots": chosen,
