@@ -196,7 +196,7 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **99 tests pass** |
+| test suite | **123 tests pass** |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
@@ -225,17 +225,31 @@ trusting the frame thresholds.
 
 | metric | result |
 |---|---|
+| **decision** (action + slots) vs the labels | 90/91 spawns = **99%** |
 | frame, `sat_mean` cut at 152.65 | 180/182 = **99%** |
-| badge OCR, exact value | 113/182 = **62%** |
-| — numbered card written off as `E` | **3** |
-| — `E` promoted to a number | **9** |
+| badge OCR, exact value | 124/182 = **68%** |
 | character name, read anything at all | 149/182 = **82%** |
 | series name, read anything at all | 74/182 = **41%** |
 
-Read the two error rows, not the 62%. Most badge misses are a digit lost or
-gained inside a four-digit print — `1609` read as `4609`, `1550` as `550` —
-and every one of those is junk either way, so the decision is unchanged. The
-twelve rows that cross the `E` boundary are the ones that cost a pick.
+Read the top row, not the 68%. Most badge misses lose or gain a digit inside
+a four-digit print — `1609` read as `4609`, `2328` as `7328` — and both are
+junk either way, so the decision is unchanged. Decision accuracy went 88% →
+99% on two rules fitted here, without the exact-read figure moving much:
+
+* **A lone digit is the hook icon, not a print.** Of 28 single-digit reads,
+  exactly one was a genuine print — and it came back at full confidence
+  while every impostor sat at 0.84 or below. Demoting the uncertain ones
+  below the trust floor removed 8 of the 11 wrong decisions on its own.
+* **No print is longer than four digits.** All 14 five-digit candidates were
+  a real print with the hook glued on as a leading `1` (`1695` → `11695`).
+  One leading `1` comes off, and only when the tail could itself be a print.
+  Selection then prefers the longest surviving candidate, since a short one
+  means glyphs were dropped.
+
+The one remaining wrong decision is `cards30.png`, whose badge read as empty
+text — and that is the card wearing the frame that matches neither `E` nor
+`NORMAL`, which the `always_claim_unknown_frame` rule would claim anyway if
+the frame were detected. Detecting it needs more than one example.
 
 Mean confidence is 0.72 on correct reads against 0.28 on wrong ones, so the
 confidence figure is a usable review signal on real cards too.
@@ -253,9 +267,12 @@ the labelling sheet and `fit` will measure them properly.
 
 * **Name OCR** (above). Needs a tighter crop on the two text lines and
   probably a per-line pass rather than one `--psm 6` block.
-* **Leading `1`.** Eleven of the badge misses drop or double a leading `1`
-  (`1550` → `550`, `1695` → `11695`). Not reproducible on synthetic cards at
-  any gap-splitting setting, so it is something about the game font's `1`.
+* **Dropped glyphs.** 41 of the 182 badges came back without the true value
+  anywhere among the candidates — usually a four-digit print read as two or
+  three digits. Length-first selection picks the best of what is there; it
+  cannot recover a digit Tesseract never emitted. This is the ceiling on the
+  68%, and fixing it means a better crop or a better binarisation, not a
+  better vote.
 * **Three- and four-card spawns.** Segmentation, scoring and the flag range
   all handle 1–4 cards and are tested at 3 and 4, but no real four-card
   spawn has been seen, so the widths above 3 are only synthetic-verified.

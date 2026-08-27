@@ -241,3 +241,58 @@ def test_a_wide_spawn_spends_at_most_the_allowed_picks(n):
 def test_a_plausible_card_count_is_not_flagged(n):
     from gacha_vision.batch import PLAUSIBLE_CARDS
     assert PLAUSIBLE_CARDS[0] <= n <= PLAUSIBLE_CARDS[1]
+
+
+# --- badge candidate filtering -------------------------------------------
+#
+# These are the two rules fitted to the 182 labelled real cards: no print is
+# longer than four digits, and a lone digit is the hook icon rather than a
+# print. Unit-tested directly because the real failures they fix cannot be
+# drawn by synth.py -- the game font's hook glyph is what produces them.
+
+def test_a_five_digit_read_loses_its_leading_hook_glyph():
+    from gacha_vision.ocr import _plausible_print
+    assert _plausible_print("11695") == "1695"
+    assert _plausible_print("12527") == "2527"
+
+
+def test_a_plausible_print_is_left_alone():
+    from gacha_vision.ocr import _plausible_print
+    for t in ("7", "20", "852", "2850"):
+        assert _plausible_print(t) == t
+
+
+def test_a_five_digit_read_that_would_gain_a_leading_zero_is_rejected():
+    """A genuine 10234 must not be corrupted into a spectacular #234."""
+    from gacha_vision.ocr import _plausible_print
+    assert _plausible_print("10234") is None
+    assert _plausible_print("29999") is None
+    assert _plausible_print("123456") is None
+
+
+def test_a_clean_single_digit_badge_is_still_trusted():
+    """The rule must not cost the good case: a crisp #4 is a real #4."""
+    from gacha_vision.analyze import analyze_cards
+    img = spawn([dict(tier=FrameTier.NORMAL, badge="4"),
+                 dict(tier=FrameTier.NORMAL, badge="1584")])
+    lone = analyze_cards(img, expected=2, read_names=False)[0]
+    assert lone.print_no == 4 and lone.print_trusted
+
+
+@pytest.mark.parametrize("badge", ["1", "3", "4", "7", "9"])
+@pytest.mark.parametrize("blur", [0, 5, 9, 13])
+def test_a_single_digit_read_is_either_certain_or_untrusted(badge, blur):
+    """No middle ground for a lone digit -- that band is where the hook lives.
+
+    A single-digit read is either confident enough to believe outright or it
+    is demoted below the trust floor. Landing between the two would mean a
+    shaky lone digit still scoring as a spectacular print.
+    """
+    from gacha_vision.ocr import MIN_TRUSTED_CONFIDENCE, _LONE_DIGIT_TRUST, read_badge
+    img = draw_card(tier=FrameTier.NORMAL, badge=badge)
+    if blur:
+        img = cv2.GaussianBlur(img, (blur, blur), 0)
+    r = read_badge(img)
+    if r["print_no"] is not None and r["print_no"] < 10:
+        c = r["confidence"]
+        assert c >= _LONE_DIGIT_TRUST or c < MIN_TRUSTED_CONFIDENCE, c

@@ -30,7 +30,7 @@ def _print_cards(cards) -> None:
         conf = f"{c.ocr_confidence:.0%}" if c.ocr_confidence else "--"
         print(
             f"  slot {c.slot}: {c.label():<44} "
-            f"ocr={conf:<5} ornate={c.frame_features.get('ornateness', 0):.3f}"
+            f"ocr={conf:<5} sat={c.frame_features.get('sat_mean', 0):.0f}"
         )
         if c.ocr_confidence and c.ocr_confidence < 0.55:
             print(f"    ! low OCR confidence (raw: {c.ocr_text!r}) -- verify before trusting")
