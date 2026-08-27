@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# run outputs -- extract/batch write these; screenshots stay on your machine
+crops/
+crops_*/
+/labels*.csv
+/report*.csv
+/sheet.html
