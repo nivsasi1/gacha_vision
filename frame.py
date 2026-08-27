@@ -25,8 +25,7 @@ keeping for two reasons:
     sat_mean       how vivid the ring is                  (gold/foil -> high)
     colored_frac   how much of the ring is chromatic at all
 
-The E/NORMAL cut point below is provisional -- fitted to nothing but a look
-at real spawns. Run ``fit`` on labelled crops to set it from data.
+The cut point below is fitted to 182 labelled real cards.
 """
 
 from __future__ import annotations
@@ -36,9 +35,13 @@ import numpy as np
 
 from .models import FrameTier
 
-# Above this ornateness the border looks like the ornate E frame; below it,
-# like the plain NORMAL one. PROVISIONAL -- see module docstring.
-E_ORNATENESS = 0.55
+# Fitted to 182 labelled real cards, and the direction is the opposite of
+# what it looks like by eye. The E border is gold: one hue family, deeply
+# saturated. The NORMAL border is a pale rainbow: many hues, low saturation.
+# So hue variety is HIGHER on NORMAL, and it was saturation that separated
+# them cleanly -- 99% against 95% for the composite, and 74% for how much of
+# the ring carries colour at all. E sits above the cut.
+E_SATURATION = 152.65
 # Below this fraction of chromatic pixels the ring is grey/flat.
 MIN_COLORED_FRAC = 0.12
 _HUE_BINS = 18          # 10-degree buckets across OpenCV's 0..179 hue range
@@ -103,12 +106,12 @@ def guess_frame(card_bgr: np.ndarray, band: float = 0.13) -> tuple[FrameTier, di
     """Guess the frame from the border alone.
 
     Only ever a second opinion: :func:`frame_from_badge` is authoritative.
-    Returns UNKNOWN rather than guessing when the ring carries no colour.
+    Splits on ring saturation, which fitted the labels at 99%.
     """
     f = frame_features(card_bgr, band)
     if f["colored_frac"] < MIN_COLORED_FRAC:
         return FrameTier.NORMAL, f
-    return (FrameTier.E if f["ornateness"] >= E_ORNATENESS else FrameTier.NORMAL), f
+    return (FrameTier.E if f["sat_mean"] >= E_SATURATION else FrameTier.NORMAL), f
 
 
 def frame_from_badge(print_no: int | None, no_number: bool) -> FrameTier:

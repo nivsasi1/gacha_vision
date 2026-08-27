@@ -76,6 +76,10 @@ def _is_must_claim(card: Card, score: Score, policy: Policy) -> str | None:
         return f"print #{tp} <= must-claim {policy.must_claim_print}"
     if score.fame_score >= policy.must_claim_fame:
         return f"fame {score.fame_score:.0f} >= must-claim {policy.must_claim_fame}"
+    if policy.always_claim_unknown_frame and card.frame is FrameTier.OTHER:
+        # Never yet catalogued, so it could be the rare frame. Worth a pick
+        # and a human glance either way.
+        return "frame is neither E nor NORMAL -- uncatalogued, claim it"
     # A holo frame used to force a claim here. Real spawns killed that rule:
     # the ornate rainbow frames sit on the *worst* cards, so it fired on E
     # cards and picked the junk half of the spawn every time.
@@ -97,6 +101,11 @@ def decide(cards: list[Card], policy: Policy, watchlist: dict[str, float] | None
         return Decision(Action.SKIP, [], [], ["no cards detected"])
 
     scores = [score_card(c, policy, watchlist) for c in cards]
+    if len(cards) == 1 and policy.always_claim_lone_card:
+        c = cards[0]
+        return Decision(Action.CLAIM, [c.slot], scores,
+                        [f"slot {c.slot}: {c.label()}",
+                         "claimed: lone card in the spawn -- nothing to weigh it against"])
     by_slot = {c.slot: c for c in cards}
     ranked = sorted(scores, key=lambda s: s.total, reverse=True)
 

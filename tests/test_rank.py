@@ -44,7 +44,9 @@ def test_low_confidence_prints_never_trigger_take_both():
 
 
 def test_a_low_confidence_print_one_is_not_auto_claimed():
-    assert decide([card(1, 1, trusted=False)], P, {}).action is Action.SKIP
+    # Two cards, because a lone card is claimed on sight regardless.
+    d = decide([card(1, 1, trusted=False), card(2, 9999)], P, {})
+    assert d.slots != [1]
 
 
 def test_trust_only_gates_the_print_not_the_watchlist():
@@ -146,10 +148,20 @@ def test_an_unfamiliar_frame_outranks_the_known_commons():
     assert P.frame_score(FrameTier.OTHER) > P.frame_score(FrameTier.NORMAL)
 
 
-def test_an_unfamiliar_frame_cannot_claim_on_its_own():
-    """...but never enough to claim a junk card by itself."""
-    d = decide([card(1, 9999, frame=FrameTier.OTHER)], P, {})
-    assert d.action is Action.SKIP
+def test_an_unfamiliar_frame_is_always_claimed():
+    """...and a frame matching neither known one is taken on sight.
+
+    Stated rule: an uncatalogued frame might be the rare one, so it is worth
+    a pick and a human glance even on a junk print.
+    """
+    d = decide([card(1, 9999, frame=FrameTier.OTHER), card(2, 8888)], P, {})
+    assert d.action is Action.CLAIM and d.slots == [1]
+
+
+def test_a_lone_card_is_always_claimed():
+    """A spawn with one card has nothing to weigh it against."""
+    for c in (card(1, 9999), card(1, no_number=True)):
+        assert decide([c], P, {}).action is Action.CLAIM
 
 
 def test_frame_breaks_a_print_tie():

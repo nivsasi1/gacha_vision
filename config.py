@@ -78,6 +78,12 @@ class Policy:
     # that E ranks below any numbered card. Watchlist fame still rescues an
     # E card; only the frame is capped.
     frame_lifts_unnumbered: bool = False
+    # A spawn that drops only one card is always worth taking: there is
+    # nothing to weigh it against and passing costs the drop outright.
+    always_claim_lone_card: bool = True
+    # A frame that is neither E nor NORMAL has never been catalogued, so it
+    # may be the rare one. Always claim it and let a human look.
+    always_claim_unknown_frame: bool = True
     # How many cards a single spawn may be claimed from.
     max_claims: int = 2
 
