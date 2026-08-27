@@ -399,6 +399,9 @@ git commit -m "Cut a name line into glyphs and words"
 
 - [ ] **Step 1: Write the atlas builder**
 
+> Note: this script imports `GLYPH_W`/`GLYPH_H` from `names.py`, which Step 2
+> adds. Write this file now but run it only after Step 2.
+
 ```python
 # tools/build_glyph_atlas.py
 """Learn a glyph atlas from the hand-read names."""
@@ -420,6 +423,23 @@ def crop(work, box):
     return cv2.resize(sub, (GLYPH_W, GLYPH_H), interpolation=cv2.INTER_AREA).astype(np.uint8)
 
 
+def _distribute(fields: list[str], n_lines: int) -> list[str]:
+    """Map label fields onto rendered lines.
+
+    The character name always occupies line 0. The series may wrap over the
+    remaining lines, and the wrap points are decided by the game's renderer,
+    not by us -- so a wrapped series cannot be aligned word-for-word to a
+    single line. Return the character label for line 0 and, only when the
+    series happens to fit on exactly one line, that series for line 1.
+    Everything else yields "" and is skipped by the alignment gate, which
+    costs some training data but never mislabels any.
+    """
+    out = [fields[0]] + [""] * (n_lines - 1)
+    if len(fields) > 1 and n_lines == 2:
+        out[1] = fields[1]
+    return out
+
+
 def main():
     bands = np.load(BANDS)
     truth = {r["card"]: (r["true_character"], r["true_series"])
@@ -431,16 +451,21 @@ def main():
         lines = segment_lines(work)
         if not lines:
             continue
-        # line 0 is the character name; the rest are the wrapped series
-        targets = [(lines[0], character)]
-        if len(lines) > 1 and series:
-            targets.append((None, series))     # series handled line-by-line below
+        # Line 0 is the character name; the remaining lines are the series,
+        # wrapped. Both are training data -- taking only the character line
+        # would throw away half the glyphs, and the series lines are where
+        # most of the rarer letters live.
+        wanted = [character] + ([series] if series else [])
         matched = False
-        boxes = [g for g in split_line(work, lines[0])]
-        letters = [c for c in character if c != " "]
-        gaps_ok = sum(1 for g in boxes if g is None) == character.count(" ")
-        glyphs = [g for g in boxes if g is not None]
-        if gaps_ok and len(glyphs) == len(letters):
+        for line, label in zip(lines, _distribute(wanted, len(lines))):
+            boxes = split_line(work, line)
+            letters = [c for c in label if c != " "]
+            glyphs = [g for g in boxes if g is not None]
+            gaps = sum(1 for g in boxes if g is None)
+            # The alignment gate: only train when the segmentation agrees
+            # with the label exactly, on both glyph count and word count.
+            if gaps != label.count(" ") or len(glyphs) != len(letters):
+                continue
             for g, ch in zip(glyphs, letters):
                 im = crop(work, g)
                 if im is not None:
