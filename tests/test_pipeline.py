@@ -209,3 +209,35 @@ def test_decision_accuracy_over_a_scenario_grid():
         if d.action is not want_action or sorted(d.slots) != want_slots:
             wrong.append((badges, want_action.value, want_slots, d.action.value, d.slots))
     assert not wrong, "decision mismatches:\n" + "\n".join(map(str, wrong))
+
+
+# --- spawns bigger than a pair -------------------------------------------
+#
+# Real spawns have only ever dropped two or three cards, but four is
+# reported as possible, so the pipeline is exercised at that width now
+# rather than discovering it the day it happens.
+
+@pytest.mark.parametrize("n", [3, 4])
+def test_a_wide_spawn_still_picks_the_best_card(n):
+    """The one good print is claimed no matter how many duds surround it."""
+    specs = [dict(tier=FrameTier.NORMAL, badge="1600") for _ in range(n)]
+    specs[n - 1] = dict(tier=FrameTier.NORMAL, badge="8")
+    cards, d = run(specs)
+    assert len(cards) == n
+    assert d.action is Action.CLAIM and d.slots == [n]
+
+
+@pytest.mark.parametrize("n", [3, 4])
+def test_a_wide_spawn_spends_at_most_the_allowed_picks(n):
+    """Three good cards in one spawn still yield only the two best picks."""
+    specs = [dict(tier=FrameTier.NORMAL, badge=b) for b in ("3", "9", "17", "12")[:n]]
+    _, d = run(specs)
+    assert d.action is Action.CLAIM_BOTH
+    assert len(d.slots) == P.max_claims
+    assert sorted(d.slots) == [1, 2]          # the two lowest prints
+
+
+@pytest.mark.parametrize("n", [1, 2, 3, 4])
+def test_a_plausible_card_count_is_not_flagged(n):
+    from gacha_vision.batch import PLAUSIBLE_CARDS
+    assert PLAUSIBLE_CARDS[0] <= n <= PLAUSIBLE_CARDS[1]

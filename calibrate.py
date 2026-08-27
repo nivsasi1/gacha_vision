@@ -1,25 +1,35 @@
 """Turn labelled measurements into tuned thresholds.
 
-``frame.THRESHOLDS`` currently holds cut points fitted to synthetic cards.
-Real frames will land elsewhere. This module closes that loop: label a batch
-CSV, fit cut points to the labels, and report how well they separate.
+``frame.E_SATURATION`` is a cut point on one border measurement. This module
+closes the loop that produced it: label a batch CSV, fit the cut to the
+labels, and report how well it separates -- plus how the badge reader and the
+name reader did against the same labels.
 
-Fitting is deliberately simple. The tiers are *ordered* (common < uncommon <
-rare < holo) and the feature is one-dimensional, so the best split for each
-adjacent pair can be found exactly by scanning candidate cut points -- no
-optimiser, no training run, and the result is a number you can read and
-argue with.
+Fitting is deliberately simple. The frames are *ordered* along the feature
+and the feature is one-dimensional, so the best split for each adjacent pair
+can be found exactly by scanning candidate cut points -- no optimiser, no
+training run, and the result is a number you can read and argue with.
 """
 
 from __future__ import annotations
 
 import csv
+import difflib
 import html
 from pathlib import Path
 
+from .config import normalise
 from .models import FrameTier
 
-# Ordered by how ornate the border is, which is what the 1-D fit splits on.
+# A name this similar to the label is a hit: OCR rarely nails punctuation,
+# and the watchlist lookup that consumes these names normalises anyway.
+_NAME_CLOSE = 0.80
+
+# The 1-D fit assumes the feature RISES along this order, so a feature that
+# runs the other way (``ornateness`` and both hue measures are all higher on
+# NORMAL than on E) fits backwards and reports a poor accuracy. That is the
+# tool telling the truth, not a bug: ``sat_mean``, the one it ships with,
+# rises from NORMAL to E and fits at 99%.
 TIER_ORDER = [FrameTier.NORMAL, FrameTier.OTHER, FrameTier.E]
 
 
@@ -68,21 +78,29 @@ def fit_thresholds(rows: list[dict], feature: str = "ornateness") -> dict:
     if labelled < 4:
         return out
 
+    # Fit across the tiers that were actually labelled, not all of them. A
+    # real batch usually has no OTHER cards at all -- that frame is the one
+    # nobody has knowingly seen -- and pairing NORMAL|OTHER and OTHER|E
+    # would then report "no samples" twice and never fit NORMAL|E, the one
+    # boundary the data can actually settle.
+    present = [t for t in TIER_ORDER if by_tier[t.value]]
+    for t in TIER_ORDER:
+        if not by_tier[t.value]:
+            out["splits"].append({"boundary": t.value, "threshold": None, "accuracy": None,
+                                  "note": "no labelled samples of this frame"})
+
     prev = 0.0
-    for lo, hi in zip(TIER_ORDER, TIER_ORDER[1:]):
+    for lo, hi in zip(present, present[1:]):
         lo_v, hi_v = by_tier[lo.value], by_tier[hi.value]
         t, acc = best_split(lo_v, hi_v)
-        if not lo_v or not hi_v:
-            out["splits"].append({"boundary": f"{lo.value}|{hi.value}", "threshold": None,
-                                  "accuracy": None, "note": "no labelled samples on one side"})
-            continue
         t = max(t, prev)                      # keep cut points monotonic
         prev = t
         out["thresholds"][hi.value] = t
         out["splits"].append({"boundary": f"{lo.value}|{hi.value}", "threshold": t,
                               "accuracy": round(acc, 3), "n": len(lo_v) + len(hi_v)})
 
-    out["overall_accuracy"] = round(_apply_accuracy(by_tier, out["thresholds"]), 3)
+    out["overall_accuracy"] = round(
+        _apply_accuracy({k: v for k, v in by_tier.items() if v}, out["thresholds"]), 3)
     return out
 
 
@@ -151,6 +169,47 @@ def ocr_report(rows: list[dict]) -> dict:
     }
 
 
+
+def name_report(rows: list[dict]) -> dict:
+    """How the character/series OCR is doing.
+
+    Two measures, because the name labels are optional and mostly absent:
+
+      * *coverage* needs no labels at all -- it just counts how often the
+        reader produced any text. A blank means the name block was never
+        located, which is a different (and worse) failure than a misread.
+      * *accuracy* is only computed over rows where ``true_character`` /
+        ``true_series`` were filled in. Exact match is too harsh a bar for
+        OCR, so a near-match is counted separately: matching the watchlist
+        is what these names are for, and "Dragon Ball 5" still finds
+        "Dragon Ball".
+    """
+    out: dict = {"rows": len(rows)}
+    for field in ("character", "series"):
+        got = [(r.get(field) or "").strip() for r in rows]
+        read = sum(1 for g in got if g)
+        pairs = [(g, (r.get(f"true_{field}") or "").strip())
+                 for g, r in zip(got, rows) if (r.get(f"true_{field}") or "").strip()]
+        exact = close = 0
+        for g, want in pairs:
+            gn, wn = normalise(g), normalise(want)
+            if gn == wn:
+                exact += 1
+            elif gn and difflib.SequenceMatcher(None, gn, wn).ratio() >= _NAME_CLOSE:
+                close += 1
+        out[field] = {
+            "read_something": read,
+            "coverage": round(read / len(rows), 3) if rows else None,
+            "labelled": len(pairs),
+            "exact": exact,
+            "close": close,
+            "accuracy": round((exact + close) / len(pairs), 3) if pairs else None,
+            "misses": [{"got": g or "(nothing)", "want": w} for g, w in pairs
+                       if normalise(g) != normalise(w)
+                       and difflib.SequenceMatcher(None, normalise(g), normalise(w)).ratio() < _NAME_CLOSE][:15],
+        }
+    return out
+
 # --- labelling sheet ------------------------------------------------------
 
 _SHEET_CSS = """
@@ -164,6 +223,11 @@ button:hover{background:#4752c4}
 .card img{width:100%;border-radius:5px;display:block;background:#000}
 .meta{font-size:11px;color:#9a9aa2;margin:7px 0 4px;line-height:1.5;word-break:break-all}
 .flag{color:#f0b232;font-weight:600}
+.names{background:#232428;border-radius:5px;padding:6px 7px;margin:6px 0 2px;font-size:12px}
+.names div{line-height:1.45;word-break:break-word}
+.names b{color:#e7e7ea;font-weight:600}
+.names .k{color:#7b7c85;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.names .none{color:#ed4245;font-style:italic}
 label{display:block;font-size:11px;color:#9a9aa2;margin-top:6px}
 select,input{width:100%;box-sizing:border-box;background:#1e1f22;color:#e7e7ea;
   border:1px solid #4a4b52;border-radius:5px;padding:5px;font-size:13px;margin-top:2px}
@@ -178,6 +242,8 @@ function save(){
     const row=JSON.parse(c.dataset.row);
     row.true_print=c.querySelector('.tp').value.trim().toUpperCase();
     row.true_frame=c.querySelector('.tf').value;
+    row.true_character=c.querySelector('.tc').value.trim();
+    row.true_series=c.querySelector('.ts').value.trim();
     out.push(hdr.map(h=>esc(row[h])).join(','));
   });
   const blob=new Blob([out.join('\\n')],{type:'text/csv'});
@@ -189,6 +255,17 @@ function fillAll(){
   document.querySelectorAll('.tf').forEach(s=>s.value=v);
 }
 """
+
+
+def _name_cell(value: str | None) -> str:
+    """Render an OCR'd name, making "read nothing at all" visibly different.
+
+    An empty cell and a garbled one are different failures -- one means the
+    text block was never found, the other that it was found and misread --
+    and telling them apart at a glance is the whole point of showing these.
+    """
+    v = (value or "").strip()
+    return f"<b>{html.escape(v)}</b>" if v else '<span class="none">(nothing read)</span>'
 
 
 def build_sheet(rows: list[dict], out_html: str | Path, fields: list[str]) -> int:
@@ -212,9 +289,16 @@ def build_sheet(rows: list[dict], out_html: str | Path, fields: list[str]) -> in
   <img src="{html.escape(img)}" loading="lazy" alt="">
   <div class="meta">{html.escape(r['image'])} · slot {r['slot']}<br>
     read <b>{html.escape(str(got))}</b> ({conf:.0%}) · {html.escape(r.get('frame',''))}
-    · idx {_f(r,'ornateness'):.3f}<br>{flag}</div>
+    · sat {_f(r,'sat_mean'):.0f}<br>{flag}</div>
+  <div class="names">
+    <div><span class="k">character</span> {_name_cell(r.get('character'))}</div>
+    <div><span class="k">series</span> {_name_cell(r.get('series'))}</div>
+  </div>
   <label>true print (number or E)<input class="tp" value="{html.escape(str(got))}"></label>
   <label>true frame<select class="tf">{tiers}</select></label>
+  <label>true character (blank = leave unchecked)
+    <input class="tc" value="{html.escape(str(r.get('true_character') or ''))}"></label>
+  <label>true series<input class="ts" value="{html.escape(str(r.get('true_series') or ''))}"></label>
 </div>""")
         cards[-1] = cards[-1].replace(
             f'<option value="{r.get("frame","")}">', f'<option value="{r.get("frame","")}" selected>', 1)
@@ -223,8 +307,10 @@ def build_sheet(rows: list[dict], out_html: str | Path, fields: list[str]) -> in
     doc = f"""<!doctype html><meta charset="utf-8"><title>gacha_vision labelling</title>
 <style>{_SHEET_CSS}</style>
 <h1>Label these crops</h1>
-<p class="sub">Prefilled with what the pipeline read. Fix what is wrong, then export —
-feed labels.csv to <code>python -m gacha_vision fit labels.csv</code>.</p>
+<p class="sub">Prefilled with what the pipeline read — including the character and series
+names, so you can see what the text OCR is producing. Fix what is wrong, then export —
+feed labels.csv to <code>python -m gacha_vision fit labels.csv</code>.
+The two name boxes are optional: fill one in only when you want that card counted.</p>
 <div class="bar">
   <button onclick="save()">Download labels.csv</button>
   &nbsp; set every frame to

@@ -30,7 +30,13 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 
 # A spawn with a card count outside this range probably means segmentation
 # grabbed chat UI or missed a card -- worth a human glance before trusting it.
-PLAUSIBLE_CARDS = (2, 3)
+#
+# Two and three are what real spawns have shown so far, but one is confirmed
+# (a lone-card drop, which is always claimed) and four is reported as
+# possible, so neither should be flagged as a segmentation failure. Five is:
+# nothing has ever dropped that many, so it is far more likely to be a
+# neighbouring message sliced up than a real spawn.
+PLAUSIBLE_CARDS = (1, 4)
 LOW_OCR = MIN_TRUSTED_CONFIDENCE
 
 CSV_FIELDS = [
@@ -39,7 +45,7 @@ CSV_FIELDS = [
     "frame", "pixel_frame", "ornateness", "hue_entropy", "hue_diversity", "sat_mean", "colored_frac",
     "character", "series", "score_total", "action", "chosen_slots", "flags",
     # left blank for you to fill in when labelling:
-    "true_print", "true_frame",
+    "true_print", "true_frame", "true_character", "true_series",
 ]
 
 

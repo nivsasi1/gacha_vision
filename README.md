@@ -102,9 +102,14 @@ python -m gacha_vision extract shots/ --out crops/
 python -m gacha_vision fit labels.csv
 ```
 
-`fit` prints a ready-to-paste `THRESHOLDS` block, the accuracy of each cut
+`fit` prints a ready-to-paste `E_SATURATION` value, the accuracy of each cut
 point, and an OCR report that separates the two errors worth caring about:
 a numbered card read as `E`, and an `E` read as a number.
+
+The sheet also shows the character and series names the text OCR produced,
+so you can see at a glance what it is getting. Those two boxes are optional
+— fill one in only for cards you want counted, and `fit` will report name
+accuracy over exactly those.
 
 To score a folder without labelling anything:
 
@@ -191,7 +196,7 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **84 tests pass** |
+| test suite | **99 tests pass** |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
@@ -213,6 +218,51 @@ These numbers are on synthetic cards drawn by `synth.py` — a real game font
 and real artwork will differ. Treat them as a regression baseline, not a
 promise, and run the calibration loop above on real screenshots before
 trusting the frame thresholds.
+
+### On real spawns
+
+182 cards from 91 real screenshots, labelled by hand:
+
+| metric | result |
+|---|---|
+| frame, `sat_mean` cut at 152.65 | 180/182 = **99%** |
+| badge OCR, exact value | 113/182 = **62%** |
+| — numbered card written off as `E` | **3** |
+| — `E` promoted to a number | **9** |
+| character name, read anything at all | 149/182 = **82%** |
+| series name, read anything at all | 74/182 = **41%** |
+
+Read the two error rows, not the 62%. Most badge misses are a digit lost or
+gained inside a four-digit print — `1609` read as `4609`, `1550` as `550` —
+and every one of those is junk either way, so the decision is unchanged. The
+twelve rows that cross the `E` boundary are the ones that cost a pick.
+
+Mean confidence is 0.72 on correct reads against 0.28 on wrong ones, so the
+confidence figure is a usable review signal on real cards too.
+
+The name reader is the weakest part. It finds *some* text on 82% of cards
+but much of it is garbled: `Popplio`, `Kamitsubaki City` and `Samurai
+Champloo` come through clean, while others land as `hahahah aly`. Series is
+worse than character because the series line is smaller and lower-contrast.
+Nothing depends on these yet — the watchlist is the only consumer, and an
+empty name simply scores as "not on the watchlist" — but they are not
+trustworthy enough to build on. Fill in `true_character` / `true_series` on
+the labelling sheet and `fit` will measure them properly.
+
+## Known gaps
+
+* **Name OCR** (above). Needs a tighter crop on the two text lines and
+  probably a per-line pass rather than one `--psm 6` block.
+* **Leading `1`.** Eleven of the badge misses drop or double a leading `1`
+  (`1550` → `550`, `1695` → `11695`). Not reproducible on synthetic cards at
+  any gap-splitting setting, so it is something about the game font's `1`.
+* **Three- and four-card spawns.** Segmentation, scoring and the flag range
+  all handle 1–4 cards and are tested at 3 and 4, but no real four-card
+  spawn has been seen, so the widths above 3 are only synthetic-verified.
+  `max_claims` still caps picks at 2, which is the game's own limit.
+* **The `OTHER` frame** has never appeared in a labelled batch, so its cut
+  point is unfitted. It is handled by always claiming it, which is the safe
+  behaviour precisely because it is uncalibrated.
 
 ## Testing
 

@@ -18,7 +18,7 @@ from pathlib import Path
 
 from .analyze import analyze_cards, analyze_spawn, load_image
 from .batch import CSV_FIELDS, analyze_folder, summarize, write_csv
-from .calibrate import build_sheet, fit_thresholds, ocr_report, read_csv
+from .calibrate import build_sheet, fit_thresholds, name_report, ocr_report, read_csv
 from .config import Policy, load_policy, load_watchlist
 from .models import FrameTier
 from .rank import decide
@@ -247,12 +247,12 @@ def cmd_fit(a: argparse.Namespace) -> int:
                 print(f"  {sp['boundary']:<20} cut={sp['threshold']:<8} "
                       f"acc={sp['accuracy']:.0%}  (n={sp['n']})")
         print(f"  overall: {fit.get('overall_accuracy', 0):.0%}")
-        print("\n  paste into gacha_vision/frame.py:\n")
-        print("  THRESHOLDS = {")
-        for tier in ("other", "e"):
-            if tier in fit["thresholds"]:
-                print(f"      FrameTier.{tier.upper()}: {fit['thresholds'][tier]},")
-        print("  }")
+        cut = fit["thresholds"].get(FrameTier.E.value)
+        if cut is not None and a.feature == "sat_mean":
+            print(f"\n  paste into gacha_vision/frame.py:\n\n      E_SATURATION = {cut}")
+        elif cut is not None:
+            print(f"\n  cut on {a.feature} is {cut}; frame.py splits on sat_mean, so "
+                  f"swap guess_frame's feature too before pasting it")
 
     o = ocr_report(rows)
     print(f"\n-- badge OCR --")
@@ -268,6 +268,22 @@ def cmd_fit(a: argparse.Namespace) -> int:
             for m in o["misses"]:
                 print(f"    {m['image']} slot{m['slot']}: want {m['want']:<6} got {m['got']:<6} "
                       f"conf={m['conf']:.2f} raw={m['raw']!r}")
+
+    n = name_report(rows)
+    print(f"\n-- character / series OCR --")
+    for field in ("character", "series"):
+        d = n[field]
+        line = f"  {field:<10} read something on {d['read_something']}/{n['rows']}"
+        if d["coverage"] is not None:
+            line += f" = {d['coverage']:.0%}"
+        print(line)
+        if d["labelled"]:
+            print(f"             vs labels: {d['exact']} exact + {d['close']} close "
+                  f"of {d['labelled']} = {d['accuracy']:.0%}")
+            for m in d["misses"]:
+                print(f"               want {m['want']!r} got {m['got']!r}")
+        else:
+            print("             no true_%s labels; fill some in on the sheet to measure" % field)
     print()
     return 0
 
@@ -318,7 +334,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     f = sub.add_parser("fit", help="fit thresholds from a labelled CSV")
     f.add_argument("csv")
-    f.add_argument("--feature", default="ornateness")
+    f.add_argument("--feature", default="sat_mean",
+                   help="ring measurement to fit the frame cut on; sat_mean separated "
+                        "182 labelled cards at 99%% and is what frame.py ships")
     f.set_defaults(func=cmd_fit)
 
     doc = sub.add_parser("doctor", help="check python, deps and tesseract on this machine")
