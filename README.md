@@ -11,11 +11,12 @@ Given an image of two or more cards, it reports each card's **print number**,
 * a watchlist character can rescue an otherwise weak card
 
 **Frames.** The game has two, and both are commons: `NORMAL` carries the
-print number (the "rating"), `E` carries none. Which one a card wears is
-therefore decided by its badge, not by how decorated its border looks — so
-the badge is authoritative here and the border only corroborates it. A card
-whose border disagrees with its badge is flagged rather than trusted, and a
-frame matching neither is recorded as `OTHER` for review.
+print number (the "rating"), `E` carries none. That definition makes the badge
+look authoritative — but on 182 hand-labelled real cards the border called the
+frame right 182 times and the badge 160, and the border won all 22
+disagreements. So the border decides whether a card carries a number and the
+badge only supplies the digits. A card whose badge contradicts the border is
+still flagged for review, since that is reliably where a misread lives.
 
 **Scope:** image in, decision out. There is no game integration, no network
 access and no account handling in this package, by design. It analyses
@@ -146,7 +147,7 @@ nearly everything.
 |---|---|---|
 | find cards | `segment.py` | gutter projection, falling back to contours then equal columns |
 | read the badge | `ocr.py` | component analysis → tight glyph crops → Tesseract, confidence-weighted vote |
-| frame | `frame.py` | badge decides `NORMAL` vs `E`; border ornateness corroborates |
+| frame | `frame.py` | border saturation decides `NORMAL` vs `E`; badge cross-checks |
 | decide | `rank.py` | weighted score per card, then the policy rules |
 
 Five findings shaped this code, each caught by measurement rather than
@@ -196,12 +197,15 @@ On synthetic spawns (`python -m gacha_vision demo`):
 |---|---|
 | badge OCR, 20 values × 4 border styles | 76/80 = **95%** |
 | card segmentation, 40-spawn corpus | 93/93 cards, **100%** |
-| test suite | **121 tests pass** |
+| test suite | **128 tests**, 127 passing (see Known gaps) |
 | throughput | **~150 ms/card** (40 spawns / 93 cards in 21 s) |
 
 On a 40-spawn corpus scored end to end, `fit` recovered frame thresholds at
-98% accuracy and the badge reader hit 92% — with **zero costly errors**: no
-numbered card read as `E`, and no `E` read as a number.
+98% accuracy and the badge reader hit 92%. It also reported zero costly errors
+— but that figure came from `ocr_report`, which silently drops every card
+whose `true_print` label is blank; see the real-spawn section below. These
+synthetic numbers have not been re-measured since that was found, so treat the
+costly-error count here as unknown rather than zero.
 
 The four badge misses are all an isolated `#1` read as `#4`. Worth knowing:
 `12`, `14`, `100` and `1584` all read correctly, so `1` only fails alone —
@@ -221,20 +225,34 @@ trusting the frame thresholds.
 
 ### On real spawns
 
-182 cards from 91 real screenshots, labelled by hand:
+182 cards from 91 real screenshots, every badge and 59 of the name blocks
+labelled by hand. The labels are committed at
+`gacha_vision/tests/data/real_labels.csv` and `test_real_corpus.py` replays
+them, so these numbers are a test, not a memory.
 
 | metric | result |
 |---|---|
+| frame (`E` vs numbered), border at `sat_mean` 152.65 | 182/182 = **100%** |
+| **costly errors** — an `E` given a number, or a number lost as `E` | **0/182** |
+| badge OCR, exact value | 139/182 = **76%** |
 | **decision** (action + slots) vs the labels | 90/91 spawns = **99%** |
-| frame, `sat_mean` cut at 152.65 | 182/182 = **100%** |
-| badge OCR, exact value | 123/182 = **68%** |
+| — the same corpus if you simply skip everything | 88/91 = **97%** |
+| character name, *correct* | 0/59 = **0%** |
+| character name, produced any text at all | 49/59 = **83%** |
 | character name, string similarity to the truth | **0.18** |
 | series name, string similarity to the truth | **0.07** |
 
-Read the top row, not the 68%. Most badge misses lose or gain a digit inside
-a four-digit print — `1609` read as `4609`, `2328` as `7328` — and both are
-junk either way, so the decision is unchanged. Decision accuracy went 88% →
-99% on two rules fitted here, without the exact-read figure moving much:
+**Read the last three rows before the fourth.** 99% decision accuracy sounds
+strong until you notice that 88 of these 91 spawns should be skipped, so
+doing nothing scores 97%. On the three spawns actually worth claiming this
+catches two, and one of those is a lone-card auto-claim rather than a
+judgement. Treat the decision figure as a regression tripwire, not evidence
+that the ranker works — the corpus does not yet contain enough good cards to
+tell.
+
+Badge misses mostly lose or gain a digit inside a four-digit print — `1609`
+read as `4609`, `2328` as `7328` — and both are junk either way, so the
+decision is unchanged. Two rules that helped:
 
 * **A lone digit is the hook icon, not a print.** Of 27 single-digit reads,
   *none* was a genuine print — 19 of them on `NORMAL` frames, where a number
@@ -256,23 +274,49 @@ real print across 182 cards was two digits — while the opposite error fired
 27 times. The comment in `ocr.py` marks the line to revisit if a real
 single-digit print ever appears in a labelled batch.
 
-Two rules that looked promising were measured and **rejected**:
+One rule was measured and **rejected**: claiming the best unreadable card
+whenever the spawn would be skipped anyway — "a pick you were not going to
+spend costs nothing" — collapsed to 31%. Unreadable badges are common enough
+that it claims on almost every spawn.
 
-* Letting the (100%-accurate) frame override the badge on whether a number
-  exists at all scored no better than the lone-digit rule alone, and asserts
-  more than the badge can support. The badge stays authoritative.
-* Claiming the best unreadable card whenever the spawn would be skipped
-  anyway — "a pick you were not going to spend costs nothing" — collapsed to
-  31%. Unreadable badges are common enough that it claims on almost every
-  spawn.
+A second was rejected once and has since been **reinstated**, which is worth
+recording because the first verdict was not wrong so much as measured against
+the wrong thing. Letting the border decide whether a number exists was judged
+to score "no better than the lone-digit rule alone" — true, on *decision*
+accuracy, which cannot separate them: 88 of these 91 spawns should be skipped,
+so the metric saturates at 97% before either rule is applied. Scored on what
+the rules actually change, they are not alternatives at all:
+
+* the lone-digit rule withholds *trust* from a bad read, leaving `print_no`
+  set and `no_number` false — so an `E` card still comes out wearing a
+  `NORMAL` frame and scoring 25.0 as "unreadable" rather than 6.0 as an `E`;
+* the border gate fixes the *frame*, which is a different field.
+
+Measured on the 182 cards: frame 160/182 → **182/182**, and the costly errors
+— 16 `E`s promoted to numbers, 3 numbers written off as `E` — go **19 → 0**.
+The badge is no longer authoritative on whether a number exists; it is still
+the only thing that reads the digits. `test_real_corpus.py` holds both floors.
 
 The one remaining wrong decision is `cards30.png`, whose badge read as empty
 text — and that is the card wearing the frame that matches neither `E` nor
 `NORMAL`, which the `always_claim_unknown_frame` rule would claim anyway if
 the frame were detected. Detecting it needs more than one example.
 
-Mean confidence is 0.72 on correct reads against 0.28 on wrong ones, so the
-confidence figure is a usable review signal on real cards too.
+* **The border beats the badge, and it is not close.** Border 182/182 against
+  badge 160/182, and the border was right in all 22 disagreements. Letting the
+  badge decide the frame was costing 19 cards — 16 `E`s promoted to numbers
+  and 3 numbers written off as `E`. Both classes are now zero.
+* **"Zero costly errors" was a measurement artifact.** `fit`'s `ocr_report`
+  skips any row whose `true_print` is blank, which is how the labelling sheet
+  records an `E` card — so all 101 `E`s were dropped and `E_read_as_number`
+  could not be anything but zero. Write `E` in the print column, not a blank,
+  and the same file reports 10 of them. (It still misses the 6 read as
+  unreadable rather than as a digit.)
+* **Confidence does not separate right digits from wrong ones.** The oft-quoted
+  0.72-against-0.28 is real but comes entirely from the 101 clean `E` reads
+  averaging 0.81. On numbered cards alone it is 0.31 correct against 0.27
+  wrong — no signal. Only 48% of badges clear the 0.55 trust floor at all, so
+  half the corpus scores as a flat "unreadable" constant.
 
 ### The name reader does not work
 
@@ -292,7 +336,9 @@ eye (`data/name_truth_8cards.csv`):
 | Hinageshi Usuzumi | `OOOH` | Momentary Lily | `toy` |
 | Misono Arisuin | — | SERVAMP | — |
 
-**Zero of sixteen** share meaningful letters with the truth. These are not
+**Zero of sixteen** share meaningful letters with the truth. A wider check
+agrees: over 59 hand-read name blocks, none matched and none was even 80%
+similar. These are not
 near-misses that better thresholding would sharpen — that is what it looks
 like when Tesseract does not recognise the typeface at all. Scale
 normalisation (the fix that worked for the badge), brightness masking for
@@ -303,7 +349,10 @@ tell: the difficulty is the game's display font, not the pipeline around it.
 
 Nothing depends on these. The watchlist is the only consumer, and a name
 that matches nothing scores as `fame_default`, so the fame term degrades to
-a constant rather than to a wrong answer. `read_name` still reports its
+a constant rather than to a wrong answer — but it *is* a constant: a
+watchlist built from every character and series in the sample, all at
+must-claim fame, matched 1 card in 59, so `w_fame` (35% of the score) is
+pinned at its default on essentially every card. `read_name` still reports its
 text, and now its confidence alongside it, so the sheet shows how little to
 trust it.
 
@@ -318,6 +367,12 @@ Getting it working means one of:
   print number. Honest, and costs nothing that currently works.
 
 ## Known gaps
+
+* **`test_decision_accuracy_over_a_scenario_grid` fails.** A synthetic spawn of
+  `#13` and `#20` now claims one card where the grid expects both: the badge
+  reads `13` as a single digit, which the lone-digit rule demotes below the
+  trust floor by design. Either the grid's expectation is stale or the rule is
+  costing more than intended — it wants a decision, not a silent edit.
 
 * **Name OCR** (above). Needs a font-trained model or artwork matching, not
   tuning; the tuning was tried.
