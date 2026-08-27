@@ -13,7 +13,7 @@ import pytest
 
 from gacha_vision.analyze import analyze_cards
 from gacha_vision.config import Policy, normalise
-from gacha_vision.frame import frame_from_badge, guess_frame
+from gacha_vision.frame import frame_from_badge, guess_frame, resolve_frame
 from gacha_vision.models import Action, FrameTier
 from gacha_vision.ocr import read_badge
 from gacha_vision.rank import decide
@@ -113,21 +113,28 @@ def test_the_e_frame_measures_as_more_ornate_than_normal():
     assert normal < e
 
 
-def test_badge_decides_the_frame_and_a_conflict_is_flagged():
-    """The badge defines the frame; the border only corroborates.
+def test_the_border_decides_the_frame_and_a_conflicting_badge_is_flagged():
+    """The border defines the frame; the badge only supplies the digits.
 
-    Asserted on the Card rather than through a rendered image, because the
-    conflicting case -- an ornate border carrying a print number -- is one
-    the game never produces, so rendering it would test the fixtures rather
-    than the rule.
+    Asserted on resolve_frame rather than through a rendered image, because
+    the conflicting case -- an ornate border whose badge reads as a number --
+    is one the *game* never produces, only OCR does, so rendering it would
+    test the fixtures rather than the rule.
     """
     from gacha_vision.models import Card
 
-    agree = Card(slot=1, print_no=852, frame=frame_from_badge(852, False),
-                 frame_features={"pixel_frame": FrameTier.NORMAL.value})
-    conflict = Card(slot=2, print_no=430, frame=frame_from_badge(430, False),
-                    frame_features={"pixel_frame": FrameTier.E.value})
-    assert conflict.frame is FrameTier.NORMAL          # badge wins
+    tier, print_no, no_number = resolve_frame(430, False, FrameTier.E.value)
+    assert tier is FrameTier.E                          # border wins
+    assert (print_no, no_number) == (None, True)        # ...so the number goes
+
+    conflict = Card(slot=2, frame=tier, no_number=no_number, frame_features={
+        "pixel_frame": FrameTier.E.value,
+        "badge_frame": frame_from_badge(430, False).value,
+    })
+    agree = Card(slot=1, print_no=852, frame=FrameTier.NORMAL, frame_features={
+        "pixel_frame": FrameTier.NORMAL.value,
+        "badge_frame": frame_from_badge(852, False).value,
+    })
     assert conflict.frame_disagrees
     assert not agree.frame_disagrees
 

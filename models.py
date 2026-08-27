@@ -22,8 +22,10 @@ class FrameTier(str, Enum):
     ``NORMAL``, the one that does. Both are the game's common frames, so
     decoration says nothing about value -- the number does.
 
-    Because the two known frames are distinguished by whether a print
-    number exists, the badge decides the frame; pixels only corroborate.
+    The two known frames are distinguished by whether a print number exists,
+    which makes the badge look authoritative. Measured against real cards it
+    is not: the border decides the frame and the badge supplies the digits.
+    See :func:`gacha_vision.frame.resolve_frame`.
     """
 
     UNKNOWN = "unknown"   # badge unreadable, so the frame is undetermined
@@ -77,14 +79,14 @@ class Card:
 
     @property
     def frame_disagrees(self) -> bool:
-        """True when the pixels do not corroborate the badge-derived frame.
+        """True when the badge did not corroborate the frame the border set.
 
-        Not an error on its own -- it flags a card worth a human glance,
-        either because OCR misread the badge or because this frame is one
-        we have not seen before.
+        The border is what decides the frame, so this is no longer a tie to
+        break -- it is a review signal. It fires on exactly the cards whose
+        badge was misread, which on the real corpus was every time it fired.
         """
-        guess = self.frame_features.get("pixel_frame")
-        return bool(guess) and self.frame.is_known and guess != self.frame.value
+        badge = self.frame_features.get("badge_frame")
+        return bool(badge) and self.frame.is_known and badge != self.frame.value
 
     def label(self) -> str:
         who = self.character or f"card {self.slot}"

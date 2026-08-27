@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from .config import Policy, load_watchlist
-from .frame import frame_from_badge, guess_frame
+from .frame import frame_from_badge, guess_frame, resolve_frame
 from .models import Card, Decision
 from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name_scored
 from .rank import decide
@@ -50,12 +50,18 @@ def analyze_cards_with_boxes(
     for i, (x, y, w, h) in enumerate(boxes, start=1):
         crop = bgr[y:y + h, x:x + w]
         badge = read_badge(crop)
-        # The badge is authoritative: E is exactly the frame with no print
-        # number. The border measurement only corroborates it, and a
-        # disagreement is surfaced rather than allowed to override.
-        tier = frame_from_badge(badge["print_no"], badge["no_number"])
         pixel_tier, feats = guess_frame(crop)
-        feats = dict(feats, pixel_frame=pixel_tier.value)
+        feats = dict(
+            feats,
+            pixel_frame=pixel_tier.value,
+            badge_frame=frame_from_badge(badge["print_no"], badge["no_number"]).value,
+        )
+        # The border decides whether this card carries a print number at all;
+        # the badge is only asked for the digits. resolve_frame explains why
+        # it goes that way round.
+        tier, print_no, no_number = resolve_frame(
+            badge["print_no"], badge["no_number"], pixel_tier.value
+        )
         character, series, name_conf = ("", "", 0.0)
         if read_names:
             raw, name_conf = read_name_scored(crop)
@@ -63,8 +69,8 @@ def analyze_cards_with_boxes(
         cards.append(
             Card(
                 slot=i,
-                print_no=badge["print_no"],
-                no_number=badge["no_number"],
+                print_no=print_no,
+                no_number=no_number,
                 frame=tier,
                 character=character,
                 series=series,

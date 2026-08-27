@@ -1,16 +1,23 @@
-"""Measure a card's border, to corroborate the frame the badge implies.
+"""Measure a card's border, and decide its frame from that measurement.
 
-The badge decides the frame: a card showing a print number wears ``NORMAL``,
-a card showing ``E`` wears ``E``. That is the game's own definition and it
-needs no pixels, so this module is deliberately *not* the authority.
+``E`` is by definition the frame with no print number, so reading the badge
+looks like the exact answer and the border only a guess. Real cards say the
+opposite. Over 182 hand-labelled ones the border called the frame right 182
+times and the badge 160, and in every one of the 22 disagreements the border
+was the one that was right.
 
-What it does is measure how ornate the border is, which is a real and
-separable signal -- the ``E`` frame is a thick gold/chain border with rainbow
-corner orbs, while ``NORMAL`` is a thin pale one. That measurement is worth
-keeping for two reasons:
+The asymmetry is in the difficulty, not the definition: separating a gold ring
+from a pale one is a measurement over thousands of border pixels, while
+recognising the badge glyph is a few strokes beside a hook icon shaped like a
+``1``, at a size where Tesseract drops digits outright. So the border settles
+whether a card carries a number and the badge is left to supply the digits.
 
-  * it cross-checks the badge, so a card whose border disagrees with its
-    number is surfaced rather than silently trusted, and
+The ``E`` frame is a thick gold/chain border with rainbow corner orbs;
+``NORMAL`` is a thin pale one. Keeping the badge's opinion alongside is still
+worth it:
+
+  * it cross-checks the border, so a card whose badge disagrees is surfaced
+    for review rather than silently overruled, and
   * an unfamiliar frame -- one that matches neither -- is exactly the kind of
     card worth a human glance, since every frame seen so far is a common.
 
@@ -126,3 +133,36 @@ def frame_from_badge(print_no: int | None, no_number: bool) -> FrameTier:
     if print_no is not None:
         return FrameTier.NORMAL
     return FrameTier.UNKNOWN
+
+
+def resolve_frame(
+    print_no: int | None, no_number: bool, pixel_frame: str
+) -> tuple[FrameTier, int | None, bool]:
+    """Reconcile the badge read with the border measurement.
+
+    The border decides *whether* a card carries a print number; the badge only
+    supplies the digits. That is the opposite of how this started, and the
+    labels are unambiguous about it: over 182 real cards the border called the
+    frame correctly 182 times and the badge 160, and in all 22 disagreements
+    the border was the one that was right.
+
+    The reason is that the two jobs are not equally hard. Telling a gold ring
+    from a pale one is a whole-border measurement over thousands of pixels;
+    recognising a glyph is a handful of strokes next to a hook icon that looks
+    like a ``1``, at a size where Tesseract drops digits. So the border answers
+    the E/number question and the badge is left the job it can do.
+
+    A card whose digits the badge could not read still has a known frame -- the
+    border settled that -- so it comes back ``NORMAL`` with ``print_no=None``,
+    the state the ranker already scores as "unreadable, review" and the batch
+    flags as ``unreadable_badge``. Calling it an E instead would throw away a
+    real print, which is the error worth avoiding here.
+
+    Returns the card's ``(frame, print_no, no_number)``.
+    """
+    if pixel_frame == FrameTier.E.value:
+        return FrameTier.E, None, True
+    if pixel_frame == FrameTier.NORMAL.value:
+        return FrameTier.NORMAL, print_no, False
+    # No usable border reading: fall back to what the badge said.
+    return frame_from_badge(print_no, no_number), print_no, no_number
