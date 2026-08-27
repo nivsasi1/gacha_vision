@@ -72,8 +72,8 @@ Coverage arithmetic is what makes this safe. 182 cards × two fields is roughly
 **5,000 glyphs** — enough to cover A–Z, a–z, 0–9 and common punctuation many
 times over, with even `Q`/`Z`/`j` appearing often enough for 1-NN. Rare
 accented forms are the likeliest coverage gap, and are the clearest thing
-stage B would fix. So B is an
-upgrade for completeness, not a rescue from a gap.
+stage B would fix. So B is an upgrade for completeness, not a rescue from a
+gap.
 
 **C — retraining Tesseract (tesstrain)** was rejected: heaviest toolchain,
 slowest iteration, and the evidence from the badge work is that the wins come
