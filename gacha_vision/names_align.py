@@ -333,3 +333,229 @@ def mean_templates(pool: dict[str, list[np.ndarray]]) -> dict[str, np.ndarray]:
         stack = np.stack(resized).astype(np.float64)
         out[c] = stack.mean(axis=0).astype(np.uint8)
     return out
+
+
+# --------------------------------------------------------------------------
+# free-running (unconstrained) decoding -- Task R2
+#
+# forced_align above places a *known* string: every token's class is given,
+# so the only thing the DP searches for is position. Reading an unlabelled
+# card has no known string -- the DP has to search class *and* position (and
+# how many glyphs there even are) at once. That needs two changes to the
+# same shift-and-score idea:
+#
+#   1. At every column, every atlas class is a candidate, not just the next
+#      token in a fixed script -- so the DP takes an elementwise max over
+#      classes instead of following a predetermined sequence.
+#   2. There is no "the rest of the string still has to go somewhere" -- so
+#      a column that no class explains well can simply cost nothing and be
+#      skipped, rather than being forced to absorb some letter's template.
+#      That is what lets a free read step over the border-art contamination
+#      documented in task-R1-report.md instead of being forced to mislabel
+#      it (forced_align has no such option because every token in the known
+#      string must be placed *somewhere*).
+
+# Candidate glyph widths, in the LINE_HEIGHT-normalised frame free_align
+# operates in. Measured from split_line's own widths on the ~52 cards whose
+# naive segmentation already agrees with the character-name label (the same
+# cards Task R1's seeding uses), converted to this frame via each line's own
+# ink-bounds scale: 1st/50th/99th percentile 3.8 / 13.6 / 30.1px (n=534,
+# min 0.8, max 37.5). The bucket list below spans that range at ~2px
+# resolution through the dense middle and coarser at the tails, since the
+# widest letters ('m', 'M', 'W') are rare enough that precision there
+# matters less than keeping the per-line sweep (width x class) small.
+FREE_WIDTH_CANDIDATES: tuple[int, ...] = (5, 7, 9, 11, 13, 16, 19, 22, 26, 30, 34)
+
+# The cost of declaring one run of columns "not a glyph", regardless of how
+# wide that run is -- a flat per-*token* cost, not a per-column one. A
+# per-column cost would make a wide skip cost proportionally more than a
+# narrow one, which has no basis here: matchTemplate's normalised
+# correlation doesn't get systematically weaker for wider templates, so a
+# wide letter shouldn't need a disproportionately better score just to beat
+# background over its own width. (An early version of this DP charged
+# background per column instead and had a second, worse bug as a result:
+# because a background-ending dp[x] could itself feed the *next* column's
+# background option, the flat cost compounded every single column instead of
+# being charged once per run, so a handful of unmatched columns was enough
+# to make background unbeatable for the rest of the line. free_align's
+# bg_widths below avoids that: background is just more entries in the same
+# width-indexed transition table characters use, so two background tokens
+# placed back to back always cost background_score twice, never once.)
+#
+# The value itself is 0.0 -- neutral, not a reward -- and that is load
+# bearing, found the hard way: a first attempt set this to +0.40 (see
+# FREE_CHAR_PENALTY below for where that number came from) on the reasoning
+# that background should score about what a spurious match typically
+# achieves. That made background strictly profitable to chain: since two
+# adjacent background tokens both still fire independently (previous
+# paragraph), and each contributes a *positive* +0.40 regardless of the
+# pixels underneath it, the DP's optimal move was always to tile the entire
+# line with as many minimum-width background tokens as it could fit --
+# caught by the ordering/coverage unit test below scoring 0 spans on a line
+# with two unmistakable synthetic glyphs on it, and confirmed by hand: dp
+# climbed by exactly 0.40 every 5 columns regardless of content, reaching
+# 9.6 over a 120px line versus ~0.6 for the one real glyph actually in it.
+# The fix is this constant at 0.0 (a background run of any length
+# contributes nothing, so chaining more of them is neutral, never a gain)
+# with the *character* side of the comparison doing 100% of the
+# discrimination work instead -- see FREE_CHAR_PENALTY.
+FREE_BACKGROUND_SCORE: float = 0.0
+
+# A flat cost subtracted from every *character* placement (background is
+# unaffected, see above). With background scoring a flat 0.0, this
+# constant alone decides how good a match has to be to beat "nothing is
+# here": a class scoring `correlation` at some position is placed only if
+# `correlation - FREE_CHAR_PENALTY` clears whatever the rest of the DP is
+# doing, which -- against a background of flat 0.0 over the same span --
+# means only positions genuinely correlating above ~FREE_CHAR_PENALTY are
+# ever placed at all.
+#
+# The value is measured, and the measurement is a real finding, not just a
+# tuning note. Matching a glyph-sized patch against 63 classes' worth of
+# templates and keeping the best score is prone to a false positive by
+# construction -- more candidates means a higher expected best-of-many even
+# against pixels that aren't a letter at all. Measured directly: 172 cards'
+# forced-aligned true-glyph positions ("ON") versus random same-line
+# positions at least 6px from any true glyph ("OFF"), both scored the same
+# way free_align scores a candidate (best-over-63-classes correlation,
+# converged atlas class means):
+#
+#   percentile        1     5    10    25    50    75    90    95    99
+#   ON  score       0.11  0.22  0.27  0.40  0.55  0.68  0.77  0.82  0.88
+#   OFF score       0.12  0.17  0.21  0.32  0.47  0.65  0.75  0.79  0.84
+#
+# The two distributions overlap heavily -- a single glyph-sized patch of
+# card artwork routinely correlates with *some* letter template about as
+# well as a real letter does, because at this resolution both are just
+# blobs of bright ink on a dark ground. No threshold cleanly separates them
+# (see task-R2-report.md); the sweep actually run found 0.40 as the value
+# maximising P(ON > thr) - P(OFF > thr) (0.759 vs 0.611, a 15-point gap --
+# the best on offer, not a confident separator).
+#
+# That per-glyph number is a starting point, not the final value, because a
+# *sequence* DP has a second failure mode a single-position threshold
+# doesn't: a self-similar glyph shape (e.g. two horizontal strokes repeated
+# down a tall letter) can correlate almost as well one-third at a time as it
+# does whole, and nothing about a per-glyph threshold stops the DP from
+# using three cheap-looking tokens where one correct one belongs -- 0.40
+# measured +16.4 mean excess glyphs per line against the true letter count
+# (100 cards, class means from the converged atlas, no LOO). Sweeping this
+# constant directly against that same span-count-vs-truth measurement (the
+# only lever now, since background is fixed at neutral) finds the bias
+# crossing zero around 0.70 (+0.8 mean excess, -3.0 median, at 150 cards).
+# Note for the record: even there only ~10-17% of individual cards land
+# within +-2 of their true letter count -- the mean crossing zero reflects
+# errors cancelling in both directions, not most cards being close, which is
+# the per-glyph ON/OFF overlap above showing up again at the sequence level.
+# See task-R2-report.md for how this caps the final leave-one-card-out
+# accuracy.
+FREE_CHAR_PENALTY: float = 0.70
+
+
+def free_align(line_img: np.ndarray, class_templates: dict[str, np.ndarray],
+                widths: tuple[int, ...] = FREE_WIDTH_CANDIDATES,
+                background_score: float = FREE_BACKGROUND_SCORE,
+                char_penalty: float = FREE_CHAR_PENALTY
+                ) -> list[tuple[int, int]]:
+    """DP-place an unknown number of unknown-class glyphs onto `line_img`.
+
+    `class_templates` (one representative bitmap per class, all the same
+    canonical shape -- names.py builds this from the atlas's own storage
+    shape, not each class's natural width, since the persisted atlas
+    doesn't keep that) is tried at every width in `widths`; the DP chooses
+    whichever (width, class, position) combination -- or background --
+    maximises the cumulative score. Returns non-overlapping `(x_start,
+    x_end)` spans in left-to-right order; *which* class won at each span is
+    deliberately not returned here, because a per-class mean is a blurry
+    classifier by design (it has to be, to keep the width sweep affordable)
+    -- names.read_line_free reclassifies each returned span against the
+    full, unblurred atlas by nearest-neighbour, the same way digits.py
+    classifies.
+    """
+    H, W = line_img.shape
+    if W == 0 or not class_templates:
+        return []
+    line_f = line_img.astype(np.float32)
+
+    # best_by_width[w][i]: the best score, over every class, of placing a
+    # w-wide glyph starting at column i, net of char_penalty. Computed once
+    # per width (not once per class per position) by collapsing
+    # cv2.matchTemplate's per-class curves with a single elementwise max.
+    best_by_width: dict[int, np.ndarray] = {}
+    for w in widths:
+        if w < 1 or w > W:
+            continue
+        curves = []
+        for tpl in class_templates.values():
+            rtpl = tpl.astype(np.float32)
+            if rtpl.shape[1] != w:
+                interp = cv2.INTER_AREA if w < rtpl.shape[1] else cv2.INTER_LINEAR
+                rtpl = cv2.resize(rtpl, (w, H), interpolation=interp)
+            curves.append(cv2.matchTemplate(line_f, rtpl, cv2.TM_CCOEFF_NORMED).reshape(-1))
+        if curves:
+            best_by_width[w] = np.max(np.stack(curves), axis=0) - char_penalty
+
+    # A background run costs the same flat `background_score` regardless of
+    # which of these widths it uses -- so given a genuinely blank span, the
+    # DP always prefers the widest one that fits (more columns explained per
+    # unit cost), and a big contaminated block collapses to one or two
+    # background tokens rather than needing a whole chain of small ones.
+    # Reusing `widths` covers ordinary inter-letter and word gaps; the
+    # coarser buckets past its top (up to 130px) exist only so a large
+    # contaminated region -- e.g. a fused decorative line, task-R1-report.md
+    # -- doesn't have to pay `background_score` many times over to get past.
+    # No real glyph is anywhere near this wide (99th percentile measured at
+    # 30px, see FREE_WIDTH_CANDIDATES above), so these buckets are
+    # unambiguously background-only.
+    bg_widths = sorted(set(w for w in widths if 1 <= w <= W)
+                        | set(w for w in (45, 60, 90, 130) if w <= W))
+
+    # dp[x]: best cumulative score of a placement (glyphs and background
+    # runs) covering columns [0, x). Both transition kinds end exactly at x
+    # and start at x - w for their own w, so -- unlike a per-column
+    # background cost -- two background runs placed back to back always
+    # cost 2 x background_score, never less: nothing here lets adjacent
+    # background tokens merge into one and silently keep re-collecting the
+    # flat cost, which is what a naive "cost accumulates while you stay in
+    # a background state" formulation would do. Free start comes for free --
+    # a background run beginning at column 0 is just another x - w = 0
+    # transition, so nothing needs to anchor the first glyph to x=0 the way
+    # forced_align's dp0 = 0 initialisation does explicitly.
+    NEG = -1e18
+    dp = np.zeros(W + 1)
+    # choice[x]: (True, w) for a glyph of width w ending at x; (False, w)
+    # for a background run of width w ending at x.
+    choice: list[tuple[bool, int]] = [(False, 1)] * (W + 1)
+    for x in range(1, W + 1):
+        best_val, best_choice = NEG, (False, 1)
+        for w, arr in best_by_width.items():
+            if w > x:
+                continue
+            val = dp[x - w] + arr[x - w]
+            if val > best_val:
+                best_val, best_choice = val, (True, w)
+        for w in bg_widths:
+            if w > x:
+                continue
+            val = dp[x - w] + background_score
+            if val > best_val:
+                best_val, best_choice = val, (False, w)
+        dp[x] = best_val
+        choice[x] = best_choice
+
+    if dp[W] <= NEG / 2:
+        # W can't be reached by any combination of the candidate widths (all
+        # >= 5) -- only possible on a pathologically narrow crop, since real
+        # lines are hundreds of pixels wide and 5 & 7 alone already span
+        # every width beyond 23. Same defensive floor forced_align uses.
+        return []
+
+    spans: list[tuple[int, int]] = []
+    x = W
+    while x > 0:
+        is_char, w = choice[x]
+        if is_char:
+            spans.append((x - w, x))
+        x -= w
+    spans.reverse()
+    return spans

@@ -56,3 +56,28 @@ Task R1: complete (see .superpowers/sdd/task-R1-report.md for full detail)
     predates 2 tests Task 2's own review added) still pass.
   - Full suite: 1 failed (pre-existing, unrelated), 143 passed. No other
     test changed status.
+Task R2: DONE_WITH_CONCERNS -- bar not met (see .superpowers/sdd/task-R2-report.md).
+  - Built names_align.free_align (unconstrained DP: width, class and
+    position all searched jointly, with an explicit background
+    alternative) and names.py's reading layer (NameRead,
+    read_names_from_band, read_names, read_line_free, LOO atlas filtering).
+  - Measured leave-one-card-out: character-level accuracy -0.611 (bar
+    0.95), exact match 0/181 (bar 0.85), series exact match 0/181
+    (report only). NOT loosened -- reported as measured per the brief.
+  - Two real bugs found and fixed via TDD before the corpus was ever
+    touched: a background score that rewarded chaining itself (tiled an
+    entire line with junk), and no per-token cost, so one real glyph
+    fragmented into several. Both now regression-tested in
+    test_names_align.py against synthetic ground truth.
+  - Dominant failure modes, quantified: segmentation contamination
+    (35% of cards' line-0 crop >20px/true-letter; r=0.76 with CER) explains
+    part of it, but the 117 "clean" cards still average CER 1.13 with zero
+    exact matches -- a per-glyph ON/OFF score-separation ceiling (best
+    threshold: 15-point gap, heavy overlap) that traces back to R1's own
+    0.38 mean forced-alignment score, worse here because the text isn't
+    known in advance. Confidence doesn't predict correctness (r=0.16 vs
+    CER); MIN_TRUSTED_MATCH set to 0.995 (reject everything) since there is
+    no correct/incorrect split to calibrate against -- 0/181 exact matches.
+  - Full suite: 149 passed, 2 failed (the same pre-existing
+    test_decision_accuracy_over_a_scenario_grid, plus this task's own
+    honestly-failing accuracy test). No other test changed status.

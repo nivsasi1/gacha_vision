@@ -23,6 +23,7 @@ from gacha_vision.names_align import (
     line_ink_bounds,
     normalise_line,
     forced_align,
+    free_align,
     harvest,
     mean_templates,
 )
@@ -221,3 +222,94 @@ def test_mean_templates_collapses_a_pool_to_one_bitmap_per_class():
     for c, t in templates.items():
         assert t.shape[0] == LINE_HEIGHT
         assert t.dtype == np.uint8
+
+
+# --------------------------------------------------------------------------
+# free_align (Task R2) -- unlike forced_align, nothing here is given the
+# right answer, so these use small synthetic lines with a known ground
+# truth rather than corpus cards: it isolates whether the DP mechanism
+# itself (segmentation *and* classification, searched jointly) is sound
+# from whether real card pixels are recognisable at all, which is what
+# test_names.py's leave-one-card-out measurement is for.
+
+def _stripe_glyph(w: int, h: int = LINE_HEIGHT) -> np.ndarray:
+    """A vertical bar with two horizontal crossbars -- distinctive enough
+    that a checkerboard glyph of the same size won't match it."""
+    t = np.zeros((h, w), dtype=np.uint8)
+    t[:, max(0, w // 2 - 1):w // 2 + 1] = 255
+    t[h // 4:h // 4 + 2, :] = 255
+    t[3 * h // 4:3 * h // 4 + 2, :] = 255
+    return t
+
+
+def _checker_glyph(w: int, h: int = LINE_HEIGHT) -> np.ndarray:
+    t = np.zeros((h, w), dtype=np.uint8)
+    cols = (np.arange(w) // 3) % 2
+    rows = (np.arange(h) // 5) % 2
+    t[np.outer(rows, np.ones_like(cols)) == np.outer(np.ones_like(rows), cols)] = 255
+    return t.astype(np.uint8)
+
+
+def _synthetic_line(width: int, placements, seed: int = 0) -> np.ndarray:
+    """A LINE_HEIGHT-tall line with `placements` -- (x0, glyph) pairs --
+    stamped onto it over low-level noise, so it isn't a flat, degenerate
+    input.
+    """
+    rng = np.random.default_rng(seed)
+    line = np.zeros((LINE_HEIGHT, width), dtype=np.uint8)
+    for x0, glyph in placements:
+        line[:, x0:x0 + glyph.shape[1]] = glyph
+    noise = rng.integers(0, 30, size=line.shape, dtype=np.uint8)
+    return np.clip(line.astype(int) + noise, 0, 255).astype(np.uint8)
+
+
+def test_free_align_finds_two_separated_synthetic_glyphs():
+    stripe, checker = _stripe_glyph(14), _checker_glyph(14)
+    line = _synthetic_line(120, [(10, stripe), (50, checker)])
+    spans = free_align(line, {"stripe": stripe, "checker": checker})
+
+    assert len(spans) == 2, spans
+    for x0, x1 in spans:
+        assert x0 < x1
+    assert spans[0][1] <= spans[1][0], f"overlapping spans: {spans}"
+    # Recovered positions should land close to where the glyphs actually
+    # are, not just anywhere -- within a few pixels of the true box.
+    assert abs(spans[0][0] - 10) <= 4 and abs(spans[0][1] - 24) <= 4, spans
+    assert abs(spans[1][0] - 50) <= 4 and abs(spans[1][1] - 64) <= 4, spans
+
+
+def test_free_align_reads_nothing_from_pure_background():
+    """No real glyph anywhere on the line -- free_align must not
+    hallucinate one just because *some* class correlates best locally.
+    This is the property the FREE_BACKGROUND_SCORE / FREE_CHAR_PENALTY
+    calibration in names_align.py exists for; see its comments for the
+    over-segmentation bug this caught during development.
+    """
+    stripe, checker = _stripe_glyph(14), _checker_glyph(14)
+    blank = np.random.default_rng(1).integers(0, 30, size=(LINE_HEIGHT, 120), dtype=np.uint8)
+    assert free_align(blank, {"stripe": stripe, "checker": checker}) == []
+
+
+def test_free_align_does_not_fragment_one_glyph_into_several():
+    """A stub that always emits many narrow same-class tokens would still
+    pass the two tests above (they only look at whether *some* placement
+    lands near the truth) -- this one fails such a stub directly, since a
+    single 14px-wide glyph correctly read is one span, not three.
+    """
+    stripe = _stripe_glyph(14)
+    line = _synthetic_line(60, [(15, stripe)])
+    spans = free_align(line, {"stripe": stripe, "checker": _checker_glyph(14)})
+    assert len(spans) == 1, f"one glyph fragmented into {len(spans)} spans: {spans}"
+
+
+def test_free_align_touching_glyphs_are_ordered_and_adjacent():
+    """This font allows letters to touch with zero gap -- free_align has to
+    place a correct sequence even when there's no blank column to anchor a
+    boundary on, unlike the well-separated case above.
+    """
+    stripe, checker = _stripe_glyph(14), _checker_glyph(14)
+    line = _synthetic_line(200, [(20, stripe), (34, checker), (90, stripe)])
+    spans = free_align(line, {"stripe": stripe, "checker": checker})
+    assert len(spans) == 3, spans
+    for (_, x1), (nx0, _) in zip(spans, spans[1:]):
+        assert x1 <= nx0, f"overlapping spans: {spans}"
