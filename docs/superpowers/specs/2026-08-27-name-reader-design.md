@@ -1,7 +1,21 @@
 # Name reader — design
 
 **Date:** 2026-08-27
-**Status:** approved, not yet implemented
+**Status:** abandoned
+
+**Postmortem (2026-08-28):** Both options below were built and measured, not
+just A. Option A (learned glyph atlas) shipped a segmentation-free redesign
+after per-glyph cutting hit a hard ceiling (55-62% exact glyph-count match,
+oracle-given the correct answer), then a free-running reader on top of that
+came in at -0.611 leave-one-card-out character accuracy against this doc's
+own 0.95 bar. Option B (font identification) found no font within 0.3 of its
+0.90 bar. The root cause neither could have coded around: the source images
+are the original files downloaded from Discord, and the name text renders at
+7 pixels tall -- well under what Tesseract or template matching need, and
+not fixable by iterating on the algorithm. See the README's "Name reader"
+section for the full comparison against the badge reader (9px, 99% exact)
+and what remains -- the labelled corpus and working line segmentation --
+for a future attempt.
 
 ## Problem
 
