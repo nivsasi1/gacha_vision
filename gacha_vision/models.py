@@ -63,9 +63,10 @@ class Card:
     # Diagnostics from the vision stage; ignored by ranking.
     ocr_text: str = ""
     ocr_confidence: float = 0.0
-    # Tesseract's mean word confidence on the name block. Reported, never
-    # acted on: the name text itself has never once been right (see
-    # ocr.read_name), so this exists to make that visible on the sheet.
+    # Always 0.0: the name reader was abandoned (7px source text, see the
+    # README's "Name reader" section) and nothing sets this any more. Kept
+    # on the dataclass rather than removed so the labelling sheet's column
+    # still lines up; character/series are equally always empty.
     name_confidence: float = 0.0
     # Whether the print number is solid enough to act on. The vision stage
     # decides this from OCR confidence; the ranker only reads it, so the

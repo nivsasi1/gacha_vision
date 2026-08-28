@@ -44,7 +44,6 @@ def cmd_analyze(a: argparse.Namespace) -> int:
         watchlist_path=a.watchlist,
         expected=a.expected,
         layout=a.layout,
-        read_names=not a.no_names,
     )
     if a.json:
         print(json.dumps(
@@ -179,7 +178,7 @@ def _run_batch(a, crop_dir=None):
     results = analyze_folder(
         a.folder, policy, watchlist,
         expected=a.expected, layout=a.layout,
-        read_names=not a.no_names, workers=a.workers,
+        workers=a.workers,
         crop_dir=crop_dir, progress=_progress,
     )
     if not results:
@@ -307,7 +306,6 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--watchlist", default=None, help="JSON of favoured characters/series")
     a.add_argument("--policy", default=None, help="JSON policy overrides")
     a.add_argument("--json", action="store_true")
-    a.add_argument("--no-names", action="store_true", help="skip name OCR (faster)")
     a.set_defaults(func=cmd_analyze)
 
     c = sub.add_parser("calibrate", help="dump frame features for threshold tuning")
@@ -323,7 +321,6 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--workers", type=int, default=None,
                         help="parallel processes (default 1; >1 falls back to "
                              "serial if the pool cannot start)")
-        sp.add_argument("--no-names", action="store_true")
 
     b = sub.add_parser("batch", help="score a whole folder into a CSV")
     folder_args(b)

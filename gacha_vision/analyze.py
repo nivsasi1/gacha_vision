@@ -11,7 +11,7 @@ from .config import Policy, load_watchlist
 from .digits import MIN_TRUSTED_MATCH, read_print_number
 from .frame import frame_from_badge, guess_frame, resolve_frame
 from .models import Card, Decision
-from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge, read_name_scored
+from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge
 from .rank import decide
 from .segment import find_cards
 
@@ -21,18 +21,6 @@ def load_image(path: str | Path) -> np.ndarray:
     if img is None:
         raise FileNotFoundError(f"could not read image: {path}")
     return img
-
-
-def split_name(raw: str) -> tuple[str, str]:
-    """Card name blocks read as '<character> <series>' across two lines.
-
-    Without a title database this is a guess, so we return the whole string
-    as the character and let the watchlist match on substrings.
-    """
-    parts = [p for p in raw.split("  ") if p.strip()]
-    if len(parts) >= 2:
-        return parts[0].strip(), " ".join(parts[1:]).strip()
-    return raw.strip(), ""
 
 
 def analyze_cards_with_boxes(
@@ -45,6 +33,13 @@ def analyze_cards_with_boxes(
 
     Callers that need the pixels back -- the calibration extractor, mainly --
     should not have to re-run segmentation to get them.
+
+    `read_names` is accepted but does nothing. The name reader was
+    abandoned (see the README's "Name reader" section), so `Card.character`
+    /`series`/`name_confidence` are always left at their dataclass defaults.
+    Kept on the signature rather than removed so existing callers don't need
+    editing; the CLI's `--no-names` flag, which did advertise a real
+    behaviour, was removed instead.
     """
     boxes = find_cards(bgr, expected, layout)
     cards: list[Card] = []
@@ -73,20 +68,13 @@ def analyze_cards_with_boxes(
         tier, print_no, no_number = resolve_frame(
             badge["print_no"], badge["no_number"], pixel_tier.value
         )
-        character, series, name_conf = ("", "", 0.0)
-        if read_names:
-            raw, name_conf = read_name_scored(crop)
-            character, series = split_name(raw)
         cards.append(
             Card(
                 slot=i,
                 print_no=print_no,
                 no_number=no_number,
                 frame=tier,
-                character=character,
-                series=series,
                 ocr_text=badge["text"],
-                name_confidence=round(name_conf, 3),
                 ocr_confidence=round(badge["confidence"], 3),
                 print_trusted=badge["confidence"] >= MIN_TRUSTED_CONFIDENCE,
                 frame_features=feats,

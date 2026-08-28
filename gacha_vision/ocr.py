@@ -1,4 +1,4 @@
-"""Read the print-number badge and the character/series text off a card.
+"""Read the print-number badge off a card.
 
 The badge is a short token near the top of the card: a number (best), or the
 letter ``E`` for an un-numbered edition.
@@ -69,7 +69,6 @@ configure_tesseract()
 # handle a tight, stylised numeric crop; psm 7 returns empty on these.
 _PSMS = (8, 13)
 _WHITELIST = "-c tessedit_char_whitelist=0123456789E"
-_NAME_CFG = "--oem 3 --psm 6"
 
 BADGE_STRIP = 0.25          # fraction of card height searched for the badge
 # ...and only the right-hand part of it. The badge sits top-right on every
@@ -452,62 +451,6 @@ def _read_badge_pass(card_bgr: np.ndarray, narrow: bool) -> dict:
         # does show up in a labelled batch, this is the line to revisit.
         conf = min(conf, _LONE_DIGIT_CONFIDENCE)
     return {"print_no": int(best), "no_number": False, "confidence": conf, "text": text}
-
-
-def read_name(card_bgr: np.ndarray) -> str:
-    """Best-effort OCR of the name block near the bottom of the card.
-
-    Do not build anything on this. Measured against eight cards whose names
-    were read off the screenshot by eye, not one read shared meaningful
-    letters with the truth (mean string similarity 0.18 for the character
-    line, 0.07 for the series). The reads are not near-misses that better
-    thresholding would sharpen -- ``Seras Victoria`` came back as ``Abarat``
-    and ``Hinageshi Usuzumi`` as ``OOOH`` -- which is what it looks like when
-    Tesseract does not recognise the typeface at all. Scale normalisation,
-    brightness masking and per-line segmentation were each tried against a
-    fixture and none moved it. See the README for what would.
-    """
-    return read_name_scored(card_bgr)[0]
-
-
-def read_name_scored(card_bgr: np.ndarray) -> tuple[str, float]:
-    """:func:`read_name`, plus Tesseract's own mean word confidence (0..1).
-
-    The confidence is the useful half. Since the text itself cannot be
-    trusted, what a consumer needs is a way to see *that* -- and a garbled
-    read comes back with a visibly poor confidence where a clean one does
-    not, which is exactly the signal the labelling sheet should show.
-    """
-    h = card_bgr.shape[0]
-    strip = card_bgr[int(0.72 * h):, :]
-    if strip.size == 0:
-        return "", 0.0
-    gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
-    up = cv2.resize(gray, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-    up = cv2.bilateralFilter(up, 5, 55, 55)
-    best, best_conf = "", 0.0
-    for img in (up, cv2.bitwise_not(up)):
-        _, th = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        txt, conf = _ocr_text_block(th)
-        # Confidence picks the winner, not length. Length rewards exactly the
-        # wrong thing: a threshold that shatters the artwork into speckle
-        # emits more characters than one that finds the real text.
-        if txt and conf > best_conf:
-            best, best_conf = txt, conf
-    return best.strip(), round(best_conf, 3)
-
-
-def _ocr_text_block(binary: np.ndarray) -> tuple[str, float]:
-    """Read a binarised strip, returning cleaned text and mean word confidence."""
-    data = pytesseract.image_to_data(binary, config=_NAME_CFG,
-                                     output_type=pytesseract.Output.DICT)
-    confs = [float(c) for t, c in zip(data["text"], data["conf"])
-             if t.strip() and float(c) > 0]
-    mean_conf = (sum(confs) / len(confs) / 100.0) if confs else 0.0
-    txt = pytesseract.image_to_string(binary, config=_NAME_CFG)
-    txt = re.sub(r"[^A-Za-z0-9 \n]+", " ", txt)
-    txt = "  ".join(" ".join(ln.split()) for ln in txt.splitlines() if ln.strip())
-    return txt, mean_conf
 
 
 def _conf(raw) -> float:
