@@ -25,3 +25,10 @@ Task 2: complete (commits 1c654a4..7e8310d, review clean after fix)
     misfire on a card whose background art is uniformly bright; no such card
     in the corpus.
   - Minor, for final review: no assertion targets _split_fused directly.
+Task 3: ABANDONED - per-glyph segmentation has a 55-62% oracle ceiling.
+Font ID: NO FONT IDENTIFIED, and the calibration shows the metric cannot
+  discriminate at card resolution (a correct font self-matches at 0.29-0.62
+  after the game's outline+downscale; best candidate scored 0.597). Stage B
+  struck from the design: rendered templates are worse than learned ones.
+PIVOT (user approved): segmentation-free reading with forced alignment.
+  Revised tasks R1-R4 appended to the plan.
