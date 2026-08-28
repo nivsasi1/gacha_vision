@@ -32,3 +32,27 @@ Font ID: NO FONT IDENTIFIED, and the calibration shows the metric cannot
   struck from the design: rendered templates are worse than learned ones.
 PIVOT (user approved): segmentation-free reading with forced alignment.
   Revised tasks R1-R4 appended to the plan.
+Task R1: complete (see .superpowers/sdd/task-R1-report.md for full detail)
+  - Built gacha_vision/names_align.py (normalise_line, forced_align, harvest,
+    plus line_ink_bounds/match_score/mean_templates helpers) and
+    tools/build_glyph_atlas.py (the EM loop: seed from 52 cards' clean
+    split_line output -> align -> score-gated harvest -> re-template).
+  - TDD caught a real gap the plan didn't anticipate: forced_align could
+    return [] when segment_lines' line union is contaminated (e.g.
+    35.png#1's line 0 fuses "Seras Victoria" + "HELLSING" + border chain
+    links into one 265px-tall box) and the known text's natural template
+    widths don't fit. Fixed with a proportional shrink-to-fit so alignment
+    always returns a full placement, as the design requires; quality on
+    contaminated lines is handled by the harvest score gate instead.
+  - Atlas: 1553 glyphs, 63 classes (100% of the 63-character in-scope
+    alphabet -- character names + single-line series names). Thin (<3):
+    , - . / 7 ? L X f é. 7 more chars (+ 0 3 6 @ Q q) appear only in
+    wrapped series text, out of scope by design (unchanged from the
+    original Task 4 reasoning about un-guessable wrap points).
+  - EM: mean alignment score 0.333 -> 0.380 over 5 iterations, stopped on
+    <0.002 gain (see report for the full table).
+  - Deleted the 2 already-failing abandoned-approach tests from
+    test_names.py per the brief; the other 4 (not 3 -- the brief's count
+    predates 2 tests Task 2's own review added) still pass.
+  - Full suite: 1 failed (pre-existing, unrelated), 143 passed. No other
+    test changed status.
