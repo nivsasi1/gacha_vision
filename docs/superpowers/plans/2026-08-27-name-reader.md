@@ -848,3 +848,81 @@ git push origin main
 **Placeholder scan:** No TBD/TODO. Every code step carries runnable code; every run step carries a command and expected output.
 
 **Type consistency:** `prepare_band` → `segment_lines` → `split_line` → `glyph_vector` chain uses consistent box tuples `(x, y, w, h)`; `None` as the word-gap marker is introduced in Task 3 and consumed in Task 4 `_read_line` and the Task 4 test. `GLYPH_W`/`GLYPH_H` are defined in Task 4 Step 2 and imported by Task 4 Step 1's builder and Task 6's scorer — note this ordering when executing: run Task 4 Step 2 before Step 1's script. `NameRead` fields match their use in Task 5. `atlas_samples()` returns the same triple in Tasks 4 and 6.
+
+---
+
+# REVISION — 2026-08-28: pivot to segmentation-free reading
+
+Tasks 3–6 above are **superseded**. Tasks 1–2 stand and are complete.
+
+## Why
+
+Cutting a line into glyphs before recognising them cannot work on this font.
+Measured: an oracle allowed to pick the best threshold per card *using the
+known answer* reaches only 55–62% exact glyph-count match. Some letters are
+only single components at a threshold that fuses other letters on the same
+line, so no per-line threshold exists. That is a ceiling on the method, not
+slack in its constants.
+
+## Stage B is struck
+
+Font identification was measured and is not viable, for a reason worth
+recording. Rendering a font, degrading it exactly as the game does, and
+matching it **against itself** gives:
+
+| condition | self-match cosine |
+|---|---|
+| identical render | 1.000 |
+| shrunk to card size (~13px) | 0.621 |
+| card size + outline stroke | 0.293 |
+| card size + outline + antialiasing | 0.447 |
+
+The best real candidate scored 0.597 — at the ceiling a *correct* font could
+reach. So the metric cannot discriminate at this resolution, and more
+importantly: a template rendered from a font resembles the on-card glyph less
+than a template **learned from real cards**, which already carries the
+outline, the antialiasing and the artwork bleed. Rendered templates would be
+a downgrade, not an upgrade. Stage B is removed from the design.
+
+## New architecture
+
+Never cut a letter. Slide templates along the line and let dynamic
+programming choose the best non-overlapping sequence.
+
+The technique that makes this tractable is **forced alignment**. Every card's
+correct text is already known from Task 1, so the DP can be constrained to
+emit exactly that string, which yields per-glyph pixel positions for *all*
+182 cards — not just the ~52 where naive segmentation happened to agree.
+That converts the labelling problem from "segment correctly" into "find the
+best positions for a known answer", which is far easier and always succeeds.
+
+Pipeline:
+
+1. **Seed** a crude template per class from the cards where Task 3's
+   segmentation already aligns with the label.
+2. **Forced-align** every card: DP constrained to the known label, producing
+   per-glyph boxes for the whole corpus.
+3. **Harvest** templates from those alignments — a complete, correctly
+   labelled atlas covering every class in the corpus.
+4. **Iterate** steps 2–3 until the alignment score stops improving (EM).
+5. **Free-running read** for inference: the same DP, unconstrained, choosing
+   the sequence itself.
+6. **Measure** leave-one-card-out, holding the Global Constraints' bar.
+
+### Revised tasks
+
+- **Task R1** — forced alignment and template harvesting (`names_align.py`,
+  `tools/build_glyph_atlas.py`, `glyph_atlas.npz`).
+- **Task R2** — free-running reader (`read_names_from_band`), leave-one-card-out
+  accuracy tests carrying the 95% / 85% bar.
+- **Task R3** — wire into `analyze.py`, delete the Tesseract name path
+  (`read_name`, `read_name_scored`, `_ocr_text_block`). Task 5's steps apply
+  unchanged.
+- **Task R4** — documentation. Task 7's steps apply, plus recording why
+  stage B was struck.
+
+The two tests from the abandoned glyph-splitter approach
+(`test_glyph_count_matches_the_label_on_most_cards`,
+`test_word_gaps_are_marked`) are deleted with it: they measure a property the
+new design does not need. `split_line` itself is kept — Task R1 step 1 uses
+it for seeding.
