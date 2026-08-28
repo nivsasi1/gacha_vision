@@ -2,8 +2,8 @@
 
 Reads a screenshot of an anime card spawn and says which card is worth taking.
 
-Given an image of one to four cards, it reports each card's **print number**,
-**frame** and **character**, then applies a configurable policy:
+Given an image of one to four cards, it reports each card's **print number**
+and **frame**, then applies a configurable policy:
 
 * lower print number is better — `#14` beats `#852`
 * `E` (no print number) is the bottom, below *any* numbered card
@@ -13,13 +13,13 @@ Given an image of one to four cards, it reports each card's **print number**,
 Every decision explains itself:
 
 ```
-slot 1: BULMA (#14, normal)   badge=100%  sat=149.5
-slot 2: YAEKA (#852, normal)  badge=100%  sat=106.3
+slot 1: card 1 (#14, normal)   badge=100%  sat=149.5
+slot 2: card 2 (#852, normal)  badge=100%  sat=106.3
 
 CLAIM slot 1
-  - slot 1: BULMA (#14, normal) -> 53.4
+  - slot 1: card 1 (#14, normal) -> 53.4
   - claimed: print #14 <= 20
-  - passed on slot 2 YAEKA (#852, normal) (29.8)
+  - passed on slot 2 card 2 (#852, normal) (29.8)
 ```
 
 **Scope:** image in, decision out. No game integration, no network access, no
@@ -52,8 +52,8 @@ must not drop, not proof the ranker is finished.
 pip install -r requirements.txt
 ```
 
-Tesseract is only needed for the fallback paths (character names, and badges
-in a font the digit atlas does not know):
+Tesseract is only needed for the fallback badge path — a font the digit
+atlas does not recognise:
 
 ```bash
 sudo apt install tesseract-ocr                    # Linux
@@ -109,6 +109,7 @@ print(decision.action, decision.slots)
 | fallback badge read | `ocr.py` | tesseract, for fonts the atlas does not know |
 | frame | `frame.py` | border saturation decides `NORMAL` vs `E`; the badge cross-checks |
 | decide | `rank.py` | weighted score per card, then the policy rules |
+| *locate the name line (not wired in)* | `names.py` | finds the character-name line via segmentation on ~86% of cards; reading the glyphs on it is unsolved — see [Name reader](#name-reader) |
 
 Two findings shaped this design, both of which reversed an assumption the code
 started with. They are worth reading before changing either stage.
@@ -151,6 +152,75 @@ card, it classifies **every glyph in the corpus correctly**.
 
 It is also roughly a hundred times faster than shelling out to tesseract per
 candidate crop, and on a confident read tesseract is not consulted at all.
+
+## Name reader
+
+**Character and series names are not read.** Four independent approaches
+were tried, measured, and abandoned. This section says plainly why, because
+the reason is a real, load-bearing finding, not a bug someone forgot to fix.
+
+### Why
+
+The source images are the original files downloaded from Discord, not
+screenshots — no higher-resolution version exists. At that resolution the
+name text renders at **7 pixels tall**. Tesseract's own documentation asks
+for roughly 30px of cap height to recognise text reliably; classical
+template matching wants similar headroom. None of the four attempts below
+ever had enough pixels to work with, and no amount of thresholding,
+segmentation or classifier tuning changes how many pixels a letter is made
+of.
+
+### What was tried
+
+| approach | result |
+|---|---|
+| Tesseract OCR on the whole name block (`ocr.read_name`, now removed) | 0/59 correct; mean string similarity 0.18 (character), 0.07 (series) |
+| Cut each line into individual glyphs, then classify them | abandoned before classification — even given the correct answer up front, the best threshold per line could only cut the right *number* of glyphs on 55–62% of lines |
+| Identify the game's font, render a matching reference atlas | no font identified; the best candidate of 167 scored 0.597 mean cosine similarity against a 0.90 bar, and wasn't even clearly ahead of a nonsense runner-up |
+| Learn a glyph atlas by forced alignment (EM), then decode free-running against it | leave-one-card-out character accuracy **-0.611** against a 0.95 bar; 0/181 exact matches |
+
+Full numbers for the last two are in `.superpowers/sdd/font-id-report.md` and
+`.superpowers/sdd/task-R2-report.md`.
+
+### The crux: why the badge reader clears 99% and this one clears nothing
+
+The badge reader (`digits.py`) sits on the same cards as the name text and
+reads print numbers at **99%** exact (see Accuracy, above). Its digits are
+barely bigger — **9 pixels tall** — but it only ever has to tell apart
+**10 monospaced classes**. The name font has roughly **70 proportional**
+classes (upper- and lower-case letters, digits, punctuation), where two
+glyphs can differ by less than a pixel at this resolution. Both readers
+work at a resolution that is barely usable at all; the badge survives
+because its alphabet is small and rigid, and the name reader doesn't
+because its alphabet is neither. That margin — not a smarter threshold, a
+better-chosen font, or a cleverer decoder — is the entire difference
+between 99% and unusable.
+
+### What's left for the next attempt
+
+* `gacha_vision/tests/data/name_truth.csv` — all 182 cards' character and
+  series names, hand-read and verified against pixels. Durable, expensive
+  data; anyone attempting this again starts here.
+* `gacha_vision/tests/data/name_bands.npz` — the real name-band pixels
+  those labels describe.
+* `tools/build_name_fixture.py` / `tools/name_montage.py` — how that data
+  was produced, and how to regenerate or extend it.
+* `gacha_vision/names.py`'s `segment_lines`/`prepare_band` — the one part
+  of this effort that genuinely works: it locates the character-name line
+  correctly on ~86% of the corpus, with passing tests. It's the natural
+  foundation for whoever tries next.
+
+The likeliest path past the 7px wall is a model that never has to commit to
+a per-glyph cut at all — e.g. a CRNN trained end-to-end on whole normalised
+lines — since every approach above failed at, or before,
+segmentation-then-classification specifically. Higher-resolution source
+images would also solve it outright, but none exist for this corpus.
+
+Until this is solved, the watchlist — the only consumer of names — can only
+match by substring against text that is never read, so `w_fame` (35% of the
+scoring weight) sits at its default on essentially every card. Built from
+every character and series in an early sample at must-claim fame, it
+matched **1 card in 59**.
 
 ## Calibrating against your own screenshots
 
@@ -202,21 +272,10 @@ watchlist is what decides the rest — but see below.
 
 ## Known gaps
 
-* **The name reader does not work.** It is not weak, it is broken: across 59
-  hand-checked cards, not one character name was read correctly and not one
-  was even 80% similar. `Yoshiko Tsushima` comes back as `occ`. Scale
-  normalisation, brightness masking, per-line segmentation and confidence-based
-  selection were each built and measured; none moved it, and the same code
-  reads a rendered fixture perfectly at every size — so the difficulty is the
-  game's display font, not the pipeline around it.
-
-  This matters more than it looks, because the watchlist is the only consumer
-  and the watchlist is what should decide most spawns. Built from every
-  character *and* series in the sample at must-claim fame, it matched **1 card
-  in 59**. Until the name reader works, `w_fame` — 35% of the score — is
-  pinned at its default on essentially every card. Fixing it means training
-  tesseract on the game font, matching artwork against a reference library
-  instead of reading text, or dropping names and redistributing the weight.
+* **Character and series names are not read at all.** Four independent
+  attempts failed at the same wall — the source text is 7 pixels tall. See
+  [Name reader](#name-reader) for the full postmortem and what a future
+  attempt would need.
 
 * **`always_claim_unknown_frame` never fires.** `guess_frame` only ever
   returns `E` or `NORMAL`, so nothing in the pipeline produces the `OTHER`
@@ -245,7 +304,7 @@ watchlist is what decides the rest — but see below.
 python -m pytest gacha_vision/tests/ -q
 ```
 
-134 tests, 133 passing (see Known gaps). The suite is deliberately not all
+138 tests, 137 passing (see Known gaps). The suite is deliberately not all
 synthetic — an earlier version was, which is why the failures above went
 unnoticed:
 
