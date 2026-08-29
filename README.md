@@ -9,6 +9,7 @@ and **frame**, then applies a configurable policy:
 * `E` (no print number) is the bottom, below *any* numbered card
 * one card per spawn: the best numbered one, however high its print
 * two cards both under `#200` → take both, spend the second pick
+* a frame matching **neither** known frame → claim it on sight, any print
 * every card an `E` → claim nothing, and say so
 
 The third rule is the one that shapes the rest. A claim not spent is gone, so
@@ -151,7 +152,7 @@ a process per spawn.
 | find cards | `segment.py` | gutter projection, falling back to contours then equal columns |
 | read the badge | `digits.py` | threshold search scored on badge shape → glyph atlas, 1-NN |
 | fallback badge read | `ocr.py` | tesseract, for fonts the atlas does not know |
-| frame | `frame.py` | border saturation decides `NORMAL` vs `E`; the badge cross-checks |
+| frame | `frame.py` | border hue against a catalogue: neither known frame → `OTHER`; otherwise saturation decides `NORMAL` vs `E` |
 | decide | `rank.py` | weighted score per card, then the policy rules |
 | *locate the name line (not wired in)* | `names.py` | finds the character-name line via segmentation on ~86% of cards; reading the glyphs on it is unsolved — see [Name reader](#name-reader) |
 
@@ -196,6 +197,34 @@ card, it classifies **every glyph in the corpus correctly**.
 
 It is also roughly a hundred times faster than shelling out to tesseract per
 candidate crop, and on a confident read tesseract is not consulted at all.
+
+### A frame nobody has catalogued is the one worth taking
+
+The game has rarer frames than the two in this corpus, and a card wearing one
+is worth claiming whatever its print. There is exactly **one** example here —
+`cards30`, a blue water frame — which is far too few to describe.
+
+So the question is asked backwards. Rather than recognise the rare frame,
+`frame.py` stores what the *known* frames look like and measures how far a
+new border sits from all of them. Naming a frame needs examples of it;
+noticing that a border is like nothing on file does not.
+
+The descriptor is the hue distribution of the border, and hue only. That is
+not an arbitrary choice — saturation and brightness move with how the card
+was cropped, and a badly cut card scored as unfamiliar as a genuinely unknown
+frame, which is precisely the confusion this has to avoid. Gold is gold
+whether or not the crop is tight. The top of the card is skipped too, since
+the badge sits there and including it described the *number* as much as the
+frame.
+
+Leave-one-out over 181 catalogued cards: at most **0.110** from the nearest
+known frame, median 0.0006. The uncatalogued card sits at **0.190**. The cut
+is 0.15, and across all 182 real cards exactly one is flagged — the right one.
+
+**This rests on a single positive example.** The margin is 1.7x, not the 10x
+you would want, and a different rare frame could sit anywhere. A second
+example of any unfamiliar frame is worth more here than any amount of tuning
+— if you collect one, add it and re-measure.
 
 ## Name reader
 

@@ -37,6 +37,9 @@ The cut point below is fitted to 182 labelled real cards.
 
 from __future__ import annotations
 
+import functools
+from pathlib import Path
+
 import cv2
 import numpy as np
 
@@ -51,6 +54,18 @@ from .models import FrameTier
 E_SATURATION = 152.65
 # Below this fraction of chromatic pixels the ring is grey/flat.
 MIN_COLORED_FRAC = 0.12
+
+# How far a border's colour may sit from the nearest catalogued frame before
+# it counts as one nobody here has seen. Leave-one-out over 181 catalogued
+# cards: at most 0.110 (median 0.0006), against 0.190 for the single card
+# wearing an uncatalogued frame. The cut sits in that gap.
+#
+# It rests on exactly one positive example. A second example of any
+# unfamiliar frame is worth more here than any amount of tuning.
+UNKNOWN_FRAME_DISTANCE = 0.15
+
+_FRAME_ATLAS = Path(__file__).parent / "data" / "frame_atlas.npz"
+_RING_BINS = 12
 _HUE_BINS = 18          # 10-degree buckets across OpenCV's 0..179 hue range
 
 _EMPTY = {"ornateness": 0.0, "hue_entropy": 0.0, "hue_diversity": 0.0,
@@ -116,6 +131,13 @@ def guess_frame(card_bgr: np.ndarray, band: float = 0.13) -> tuple[FrameTier, di
     Splits on ring saturation, which fitted the labels at 99%.
     """
     f = frame_features(card_bgr, band)
+    # Before choosing between the two known frames, ask whether this border
+    # is either of them. A frame nobody has catalogued is the one worth
+    # claiming on sight, and saying "neither" is answerable from one example
+    # where naming the frame is not.
+    f["frame_distance"] = round(distance_to_known_frames(card_bgr), 4)
+    if f["frame_distance"] > UNKNOWN_FRAME_DISTANCE:
+        return FrameTier.OTHER, f
     if f["colored_frac"] < MIN_COLORED_FRAC:
         return FrameTier.NORMAL, f
     return (FrameTier.E if f["sat_mean"] >= E_SATURATION else FrameTier.NORMAL), f
@@ -164,5 +186,73 @@ def resolve_frame(
         return FrameTier.E, None, True
     if pixel_frame == FrameTier.NORMAL.value:
         return FrameTier.NORMAL, print_no, False
+    if pixel_frame == FrameTier.OTHER.value:
+        # OTHER describes the border, not the badge: a number on an
+        # uncatalogued frame still reads, and cards30 shows the badge can
+        # also sit somewhere the reader does not look. Either way the card
+        # is claimed for its frame, so an unread number costs nothing.
+        return FrameTier.OTHER, print_no, False
     # No usable border reading: fall back to what the badge said.
     return frame_from_badge(print_no, no_number), print_no, no_number
+
+
+def ring_descriptor(card_bgr: np.ndarray, band: float = 0.13,
+                    top_skip: float = 0.22, bins: int = 18) -> np.ndarray | None:
+    """Where the border's colour sits on the hue wheel.
+
+    Hue only, and deliberately. Saturation and brightness move with how the
+    card was cropped -- a few pixels of background along one edge shifts them
+    enough that a badly cut card scores as unfamiliar as a genuinely unknown
+    frame, which is exactly the confusion this has to avoid. Hue does not
+    move: gold is gold whether or not the crop is tight.
+
+    The top of the card is skipped because the badge plate sits there, and
+    including it made this describe the *number* as much as the frame.
+
+    Returns None when the border carries almost no colour at all, which is
+    not a frame this can judge.
+    """
+    img = cv2.resize(card_bgr, (96, 144), interpolation=cv2.INTER_AREA)
+    h, w = img.shape[:2]
+    mask = np.ones((h, w), dtype=bool)
+    by, bx = int(h * band), int(w * band)
+    mask[by:h - by, bx:w - bx] = False
+    mask[:int(h * top_skip), :] = False
+
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    ring = hsv[mask]
+    hue, sat, val = ring[:, 0], ring[:, 1], ring[:, 2]
+    chromatic = (sat > 60) & (val > 60)
+    if int(chromatic.sum()) < 20:
+        return None
+
+    hist, _ = np.histogram(hue[chromatic], bins=bins, range=(0, 180))
+    hist = hist.astype(np.float64)
+    hist /= hist.sum()
+    return hist / max(float(np.linalg.norm(hist)), 1e-9)
+
+
+def frame_atlas_samples() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Descriptors of every catalogued frame, their class, and their card."""
+    with np.load(_FRAME_ATLAS, allow_pickle=False) as z:
+        return z["descriptors"], z["labels"], z["card"]
+
+
+@functools.lru_cache(maxsize=1)
+def _frame_atlas():
+    try:
+        return frame_atlas_samples()
+    except FileNotFoundError:
+        return None
+
+
+def distance_to_known_frames(card_bgr: np.ndarray) -> float:
+    """How unfamiliar this border is. 0 means identical to something known."""
+    atlas = _frame_atlas()
+    if atlas is None:
+        return 0.0
+    desc, _, _ = atlas
+    d = ring_descriptor(card_bgr)
+    if d is None:
+        return 0.0          # too little colour to judge; not a claim on its own
+    return float((1.0 - desc @ d).min())

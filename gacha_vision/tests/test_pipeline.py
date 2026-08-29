@@ -103,7 +103,12 @@ def test_confidence_is_reported():
 @pytest.mark.parametrize("tier", [FrameTier.NORMAL, FrameTier.E])
 @pytest.mark.parametrize("hue", [5, 95])
 def test_pixel_guess_round_trips_the_two_known_frames(tier, hue):
-    """guess_frame only ever answers NORMAL or E -- it cannot invent OTHER."""
+    """A rendered E or NORMAL must be recognised as itself.
+
+    guess_frame can also answer OTHER now, for a border matching neither
+    known frame -- so this is the check that a frame it *does* know is not
+    mistaken for one it does not.
+    """
     assert guess_frame(draw_card(tier=tier, badge="42", art_hue=hue))[0] is tier
 
 
@@ -209,7 +214,12 @@ def test_decision_accuracy_over_a_scenario_grid():
         ([("14", FrameTier.NORMAL), ("852", FrameTier.NORMAL)], Action.CLAIM, [1]),
         ([("852", FrameTier.NORMAL), ("14", FrameTier.NORMAL)], Action.CLAIM, [2]),
         ([("17", FrameTier.NORMAL), ("12", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
-        ([("13", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
+        # 19, not 13: synth.py's hook glyph merges into 11, 13 and 15 and
+        # renders them as 41, 413 and 45. That is a property of the fixture's
+        # drawing, not of the reader -- see test_synth_renders_these_badges_
+        # cleanly below, which pins the affected set so this is discoverable
+        # rather than something each test author rediscovers.
+        ([("19", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
         # A claim not spent is lost, so a bad print still beats an E and the
         # spawn is taken. What must not happen is the WRONG card being taken.
         #
@@ -336,3 +346,35 @@ def test_a_multi_digit_read_is_still_trusted_on_its_confidence():
     cards = analyze_cards(img, expected=2, read_names=False)
     assert cards[0].print_no == 14 and cards[0].print_trusted
     assert decide(cards, P, {}).action is Action.CLAIM
+
+
+def test_synth_renders_these_badges_cleanly():
+    """Pin which synthetic badge values survive their own hook glyph.
+
+    `synth.py` draws a hook beside the badge to mimic the real card, and for
+    a few values the two merge: the hook reads as a leading `4`. This is a
+    fixture artefact, not a reader bug -- the real corpus reads 181 of 182
+    badges exactly -- but a test that picks an affected value fails for a
+    reason that has nothing to do with what it meant to check.
+
+    Kept as a test so the affected set is discovered here, once, instead of
+    inside whatever else happens to use one of them.
+    """
+    from gacha_vision.analyze import analyze_cards
+
+    merges = {"11": "41", "13": "413", "15": "45"}
+    clean = ["12", "14", "16", "17", "18", "19", "20", "21", "99"]
+
+    for badge in clean:
+        img = spawn([dict(tier=FrameTier.NORMAL, badge=badge),
+                     dict(tier=FrameTier.NORMAL, badge="852")])
+        got = analyze_cards(img, expected=2, read_names=False)[0]
+        assert str(got.print_no) == badge, f"{badge} no longer renders cleanly: {got.print_no}"
+
+    for badge, merged in merges.items():
+        img = spawn([dict(tier=FrameTier.NORMAL, badge=badge),
+                     dict(tier=FrameTier.NORMAL, badge="852")])
+        got = analyze_cards(img, expected=2, read_names=False)[0]
+        assert str(got.print_no) == merged, (
+            f"{badge} used to render as {merged}, now {got.print_no} -- if the hook "
+            f"artefact is fixed, move this value into the clean list")
