@@ -13,9 +13,11 @@ out of scope by design.
 from .analyze import analyze_cards, analyze_spawn, load_image
 from .config import Policy, load_policy, load_watchlist
 from .models import Action, Card, Decision, FrameTier, Score
+from .pick import pick
 from .rank import decide, score_card
 
 __all__ = [
+    "pick",
     "analyze_cards", "analyze_spawn", "load_image",
     "Policy", "load_policy", "load_watchlist",
     "Action", "Card", "Decision", "FrameTier", "Score",

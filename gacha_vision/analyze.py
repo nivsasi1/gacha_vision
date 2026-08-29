@@ -16,10 +16,25 @@ from .rank import decide
 from .segment import find_cards
 
 
-def load_image(path: str | Path) -> np.ndarray:
-    img = cv2.imread(str(path), cv2.IMREAD_COLOR)
+def load_image(source: str | Path | bytes | bytearray | np.ndarray) -> np.ndarray:
+    """Decode a spawn image from a path, raw bytes, or an existing array.
+
+    Bytes matter: anything driving this live has the image in memory -- a
+    downloaded attachment, a clipboard grab -- and making it round-trip
+    through a temp file to be read is pure overhead.
+    """
+    if isinstance(source, np.ndarray):
+        if source.size == 0:
+            raise ValueError("empty image array")
+        return source
+    if isinstance(source, (bytes, bytearray)):
+        img = cv2.imdecode(np.frombuffer(bytes(source), np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
+            raise ValueError("could not decode image from bytes")
+        return img
+    img = cv2.imread(str(source), cv2.IMREAD_COLOR)
     if img is None:
-        raise FileNotFoundError(f"could not read image: {path}")
+        raise FileNotFoundError(f"could not read image: {source}")
     return img
 
 

@@ -100,6 +100,28 @@ cards, decision = analyze_spawn("shot.png", policy=Policy(), expected=2)
 print(decision.action, decision.slots)
 ```
 
+### Wiring it to something
+
+`pick` is the whole integration surface: image in, slot numbers out.
+
+```python
+from gacha_vision import pick
+
+pick(image_bytes, expected=2)     # -> [2]      claim slot 2
+pick(image_bytes, expected=2)     # -> [1, 2]   claim both
+pick(image_bytes, expected=2)     # -> []       claim nothing
+```
+
+Slots are 1-based, left to right, matching the buttons under the spawn.
+`image` may be a path, raw `bytes`, or a decoded BGR array — bytes because
+anything driving this live already holds the image in memory and should not
+have to round-trip it through a temp file. A file that cannot be decoded
+raises, so a broken download never arrives looking like "nothing worth
+claiming".
+
+That is the entire contract. What you connect it to is yours; this package
+has no network access and no game integration, by design.
+
 ## How it works
 
 | stage | file | approach |
