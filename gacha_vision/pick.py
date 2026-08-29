@@ -38,8 +38,13 @@ def pick(
     ``expected`` is the card count when you know it; leave it None to let
     segmentation decide. Raises on an image that cannot be decoded, so a
     broken download never looks like "nothing worth claiming".
+
+    Runs in fast mode: tesseract is skipped on cards whose border already
+    settles the frame, which is most of them and about 1.3s each. Use
+    ``analyze_spawn`` instead when you want the full diagnostics.
     """
-    cards = analyze_cards(load_image(image), expected, layout, read_names=False)
+    cards = analyze_cards(load_image(image), expected, layout,
+                          read_names=False, fast=True)
     if not cards:
         return []
     return list(decide(cards, policy or Policy(), {}).slots)

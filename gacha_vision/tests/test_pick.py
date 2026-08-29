@@ -92,3 +92,29 @@ def test_policy_overrides_are_honoured():
                       {"tier": FrameTier.NORMAL, "badge": "12"}])
     strict = Policy(take_both_max_print=1, min_claim_score=101.0)
     assert len(pick(img, expected=2, policy=strict)) <= 1
+
+
+def test_tesseract_is_not_consulted_when_the_border_already_says_e(monkeypatch):
+    """An E card's frame is settled by its border, so the badge cannot change
+    the outcome -- and asking tesseract anyway costs ~1.3s per card, which is
+    the whole latency budget for anything reacting live."""
+    import gacha_vision.analyze as analyze
+    from gacha_vision.analyze import analyze_cards
+
+    calls = []
+    real = analyze.read_badge
+    monkeypatch.setattr(analyze, "read_badge",
+                        lambda crop: (calls.append(1), real(crop))[1])
+
+    img = draw_spawn([{"tier": FrameTier.E, "badge": "E"},
+                      {"tier": FrameTier.E, "badge": "E"}])
+    cards = analyze_cards(img, expected=2, read_names=False, fast=True)
+
+    assert all(c.no_number for c in cards), "both cards should read as E"
+    assert calls == [], f"tesseract was called {len(calls)} times on E cards"
+
+    # ...and the default path still consults it, so offline analysis keeps
+    # the second opinion that drives the frame_disagrees review flag.
+    calls.clear()
+    analyze_cards(img, expected=2, read_names=False)
+    assert calls, "the default path should still cross-check with tesseract"

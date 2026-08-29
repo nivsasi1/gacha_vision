@@ -122,6 +122,23 @@ claiming".
 That is the entire contract. What you connect it to is yours; this package
 has no network access and no game integration, by design.
 
+`pick` runs in fast mode: on a card whose border already settles the frame,
+tesseract is skipped, because it cannot change the answer and costs ~1.3s.
+That is **23 ms per spawn against 2238 ms** for the full diagnostic path, and
+it was verified not to cost accuracy — 91/91 spawns still match the labels.
+Use `analyze_spawn` when you want the diagnostics instead of the speed.
+
+From another language, shell out to the CLI:
+
+```bash
+python -m gacha_vision analyze shot.png --expected 2 --json
+```
+
+`.decision.slots` in that JSON is the same list `pick` returns. Note the CLI
+pays ~0.8s of interpreter startup per call; for anything latency-sensitive,
+keep one Python process alive and call `pick` in a loop rather than spawning
+a process per spawn.
+
 ## How it works
 
 | stage | file | approach |

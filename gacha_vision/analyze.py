@@ -10,7 +10,7 @@ import numpy as np
 from .config import Policy, load_watchlist
 from .digits import MIN_TRUSTED_MATCH, read_print_number
 from .frame import frame_from_badge, guess_frame, resolve_frame
-from .models import Card, Decision
+from .models import Card, Decision, FrameTier
 from .ocr import MIN_TRUSTED_CONFIDENCE, read_badge
 from .rank import decide
 from .segment import find_cards
@@ -43,6 +43,7 @@ def analyze_cards_with_boxes(
     expected: int | None = None,
     layout: str = "auto",
     read_names: bool = True,
+    fast: bool = False,
 ) -> tuple[list[Card], list[tuple[int, int, int, int]]]:
     """Same as :func:`analyze_cards` but also returns the crop boxes.
 
@@ -65,17 +66,32 @@ def analyze_cards_with_boxes(
         # about a second a card and has nothing to add to a clean read. Only
         # an unsure atlas (an unfamiliar font, or an "E", which has no digits
         # to match) falls through to it.
+        pixel_tier, feats = guess_frame(crop)
         atlas_no, atlas_conf = read_print_number(crop)
-        if atlas_no is not None and atlas_conf >= MIN_TRUSTED_MATCH:
+        trusted = atlas_no is not None and atlas_conf >= MIN_TRUSTED_MATCH
+        if trusted:
             badge = {"print_no": atlas_no, "no_number": False,
                      "confidence": atlas_conf, "text": str(atlas_no)}
+        elif fast and pixel_tier is FrameTier.E:
+            # The border has already settled this card: resolve_frame returns
+            # E whatever the badge says, so tesseract cannot change the
+            # outcome -- and it costs ~1.3s a card, which is the entire
+            # latency budget for anything reacting to a live spawn.
+            #
+            # Opt-in, because it does cost something real: with no tesseract
+            # read there is no second opinion to contradict the border, so
+            # the frame_disagrees review flag goes quiet on E cards. Offline
+            # analysis wants that flag and does not care about the second;
+            # anything live is the other way round.
+            badge = {"print_no": None, "no_number": True,
+                     "confidence": atlas_conf, "text": ""}
         else:
             badge = read_badge(crop)
-        pixel_tier, feats = guess_frame(crop)
         feats = dict(
             feats,
             pixel_frame=pixel_tier.value,
-            badge_frame=frame_from_badge(badge["print_no"], badge["no_number"]).value,
+            badge_frame=(FrameTier.NORMAL.value if trusted
+                         else frame_from_badge(badge["print_no"], badge["no_number"]).value),
         )
         # The border decides whether this card carries a print number at all;
         # the badge is only asked for the digits. resolve_frame explains why
@@ -103,8 +119,9 @@ def analyze_cards(
     expected: int | None = None,
     layout: str = "auto",
     read_names: bool = True,
+    fast: bool = False,
 ) -> list[Card]:
-    return analyze_cards_with_boxes(bgr, expected, layout, read_names)[0]
+    return analyze_cards_with_boxes(bgr, expected, layout, read_names, fast)[0]
 
 
 def analyze_spawn(
