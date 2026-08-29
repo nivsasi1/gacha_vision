@@ -7,8 +7,15 @@ and **frame**, then applies a configurable policy:
 
 * lower print number is better — `#14` beats `#852`
 * `E` (no print number) is the bottom, below *any* numbered card
-* two cards both under `#20` → take both, spend the extra pick
-* a watchlist character can rescue an otherwise weak card
+* one card per spawn: the best numbered one, however high its print
+* two cards both under `#200` → take both, spend the second pick
+* every card an `E` → claim nothing, and say so
+
+The third rule is the one that shapes the rest. A claim not spent is gone, so
+passing on a spawn is only right when there is nothing to choose between —
+and a numbered card never is: `#2155` is a bad card, but it beats an `E`,
+which has no number at all. An all-`E` spawn is the only case with no
+preference to express, so the reader returns empty rather than inventing one.
 
 Every decision explains itself:
 
@@ -33,18 +40,16 @@ are a test result rather than a claim.
 
 | metric | result |
 |---|---|
-| **spawns worth claiming, actually claimed** | **3/3**, no false claims |
-| decision (action + slots) vs the labels | 91/91 = **100%** |
+| **the labelled-best card picked** | **86/86 spawns** |
 | badge digits, exact value | 181/182 = **99%** |
 | frame (`E` vs numbered) | 182/182 = **100%** |
 | costly errors — an `E` given a number, or a print lost as `E` | **0** |
 | screenshots segmented correctly | 91/91 |
 
-**Read the first row, not the second.** 88 of these 91 spawns should be
-skipped, so a bot that skips everything scores 97% on decision accuracy. The
-row that carries information is how many of the three spawns holding a good
-card were claimed. Three spawns is a thin basis — treat it as a floor that
-must not drop, not proof the ranker is finished.
+**Read the first row.** Under this policy a claim is spent on almost every
+spawn — 58 of 86 here, the other 28 being all-`E` — so "did it claim" carries
+no information. What matters is *which* card it picked, and it picked the one
+the labels call best every time.
 
 ## Install
 

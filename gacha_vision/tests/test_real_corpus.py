@@ -163,17 +163,17 @@ def test_a_badge_that_contradicts_the_border_is_still_flagged_for_review():
     assert not any(c.frame_disagrees for c in agreeing)
 
 
-def test_every_spawn_worth_claiming_is_claimed(rows):
-    """Recall on the only three spawns in the corpus that hold a good card.
+def test_the_right_card_is_picked_on_every_spawn_worth_claiming(rows):
+    """Recall, and more importantly *which* card.
 
-    The corpus is 88 junk spawns and 3 worth taking, so overall decision
-    accuracy cannot see this: skipping everything scores 97%. This is the
-    number that says whether the reader is doing its job.
+    Under the current policy a claim is spent on almost every spawn -- only
+    an all-E drop is passed on -- so "did it claim" is no longer the
+    interesting question. "Did it claim the card the labels say is best" is.
     """
     got = _by_spawn(rows, _replay)
     want = _by_spawn(rows, _truth_card)
     worth = [img for img in want if decide(want[img], P, {}).action is not Action.SKIP]
-    assert len(worth) == 3, f"corpus should hold 3 claimable spawns, found {len(worth)}"
+    assert len(worth) >= 50, f"expected most spawns to be claimable, got {len(worth)}"
     missed = [img for img in worth
               if decide(got[img], P, {}).slots != decide(want[img], P, {}).slots]
-    assert missed == [], f"missed a good card on: {missed}"
+    assert missed == [], f"picked the wrong card on: {missed}"

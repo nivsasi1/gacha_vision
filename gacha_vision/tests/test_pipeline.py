@@ -159,12 +159,14 @@ def test_two_low_prints_take_both():
     assert d.action is Action.CLAIM_BOTH and sorted(d.slots) == [1, 2]
 
 
-def test_two_junk_cards_are_skipped():
+def test_a_junk_print_is_still_taken_over_an_e():
+    """A claim not spent is lost, so only an all-E spawn is passed on."""
     _, d = run([
         dict(tier=FrameTier.NORMAL, badge="E"),
         dict(tier=FrameTier.NORMAL, badge="1584"),
     ])
-    assert d.action is Action.SKIP
+    assert d.action is Action.CLAIM
+    assert d.slots == [2]
 
 
 def test_famous_character_rescues_a_junk_spawn():
@@ -182,12 +184,15 @@ def test_famous_character_rescues_a_junk_spawn():
 
 
 def test_a_decorated_border_no_longer_rescues_a_junk_print():
-    """Regression: this pair used to CLAIM on the ornate frame alone."""
+    """Regression: this pair used to CLAIM slot 1 on the ornate frame alone.
+
+    The ornate border makes slot 1 an E whatever its badge says, so the pick
+    must be slot 2 -- the only card carrying a real number."""
     _, d = run([
         dict(tier=FrameTier.E, badge="900"),
         dict(tier=FrameTier.NORMAL, badge="430"),
     ])
-    assert d.action is Action.SKIP
+    assert d.slots == [2], d.reasons
 
 
 def test_column_layout_matches_auto_layout():
@@ -205,13 +210,20 @@ def test_decision_accuracy_over_a_scenario_grid():
         ([("852", FrameTier.NORMAL), ("14", FrameTier.NORMAL)], Action.CLAIM, [2]),
         ([("17", FrameTier.NORMAL), ("12", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
         ([("13", FrameTier.NORMAL), ("20", FrameTier.NORMAL)], Action.CLAIM_BOTH, [1, 2]),
-        # A lone digit is the hook icon, so it must NOT carry the spawn.
-        ([("4", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.SKIP, []),
-        ([("E", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.SKIP, []),
-        ([("9999", FrameTier.NORMAL), ("E", FrameTier.NORMAL)], Action.SKIP, []),
-        # Ornate border, junk print: the border must not carry the decision.
-        ([("900", FrameTier.E), ("430", FrameTier.NORMAL)], Action.SKIP, []),
-        ([("430", FrameTier.NORMAL), ("900", FrameTier.E)], Action.SKIP, []),
+        # A claim not spent is lost, so a bad print still beats an E and the
+        # spawn is taken. What must not happen is the WRONG card being taken.
+        #
+        # A lone digit is the hook icon, so it must not carry the spawn: the
+        # real print wins even though it is far higher.
+        ([("4", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.CLAIM, [2]),
+        ([("E", FrameTier.NORMAL), ("1584", FrameTier.NORMAL)], Action.CLAIM, [2]),
+        ([("9999", FrameTier.NORMAL), ("E", FrameTier.NORMAL)], Action.CLAIM, [1]),
+        # Ornate border, junk print: the border makes slot 1 an E whatever
+        # its badge reads, so the numbered card is the pick.
+        ([("900", FrameTier.E), ("430", FrameTier.NORMAL)], Action.CLAIM, [2]),
+        ([("430", FrameTier.NORMAL), ("900", FrameTier.E)], Action.CLAIM, [1]),
+        # Nothing but E: no preference to express, so none is invented.
+        ([("E", FrameTier.E), ("E", FrameTier.E)], Action.SKIP, []),
     ]
     wrong = []
     for badges, want_action, want_slots in cases:
@@ -311,7 +323,9 @@ def test_an_untrusted_lone_digit_does_not_win_a_pick():
     lone = cards[0]
     assert lone.print_no == 4, "the value is kept for review, only the trust is withheld"
     assert not lone.print_trusted
-    assert decide(cards, P, {}).action is Action.SKIP
+    # Both cards are numbered, so one is taken -- but it must be the real
+    # print, not the hook icon that read as "#4".
+    assert decide(cards, P, {}).slots == [2]
 
 
 def test_a_multi_digit_read_is_still_trusted_on_its_confidence():

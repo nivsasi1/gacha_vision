@@ -57,8 +57,11 @@ class Policy:
     fame_default: float = 30.0
 
     # --- decision thresholds ---
-    # Stated rule: if two cards are both under this print, spend the extra pick.
-    take_both_max_print: int = 20
+    # Two cards both under this print justify spending the second pick.
+    # Observed prints run 1600-2200, so anything under 200 is genuinely rare
+    # and two in one spawn is rarer still -- which is what makes it worth the
+    # extra claim when it happens.
+    take_both_max_print: int = 200
     # Secondary rule: two cards this good by overall score also justify it
     # (e.g. two holo frames of watchlist characters). Set to 101 to disable.
     take_both_min_score: float = 80.0
@@ -68,6 +71,16 @@ class Policy:
     must_claim_print: int = 5
     # Always claim a character whose watchlist fame is at or above this.
     must_claim_fame: float = 90.0
+    # Take the best numbered card even when nothing clears the score floor.
+    #
+    # A claim is one per spawn and a spawn not claimed is gone, so passing
+    # entirely is only right when there is nothing to choose between. A
+    # numbered card is never that: #2155 is a bad card but it beats an E,
+    # which has no number at all. Only an all-E spawn comes back empty, and
+    # deliberately so -- there is no preference to express, so the reader
+    # says nothing rather than inventing one.
+    claim_best_numbered: bool = True
+
     # Whether a fancy frame may lift a card that has NO print number.
     #
     # Off, because real Gachapon spawns showed the opposite of the assumption
@@ -78,8 +91,10 @@ class Policy:
     # that E ranks below any numbered card. Watchlist fame still rescues an
     # E card; only the frame is capped.
     frame_lifts_unnumbered: bool = False
-    # A spawn that drops only one card is always worth taking: there is
-    # nothing to weigh it against and passing costs the drop outright.
+    # A lone *numbered* card is always worth taking -- nothing to weigh it
+    # against, and passing costs the drop outright. A lone E is not: it is
+    # junk whether or not it has company, and `claim_best_numbered` already
+    # covers every case where a card is worth having.
     always_claim_lone_card: bool = True
     # A frame that is neither E nor NORMAL has never been catalogued, so it
     # may be the rare one. Always claim it and let a human look.

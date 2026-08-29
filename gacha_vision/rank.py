@@ -101,12 +101,13 @@ def decide(cards: list[Card], policy: Policy, watchlist: dict[str, float] | None
         return Decision(Action.SKIP, [], [], ["no cards detected"])
 
     scores = [score_card(c, policy, watchlist) for c in cards]
-    if len(cards) == 1 and policy.always_claim_lone_card:
+    if len(cards) == 1 and policy.always_claim_lone_card and not cards[0].no_number:
         c = cards[0]
         return Decision(Action.CLAIM, [c.slot], scores,
                         [f"slot {c.slot}: {c.label()}",
                          "claimed: lone card in the spawn -- nothing to weigh it against"])
     by_slot = {c.slot: c for c in cards}
+    by_slot_score = {s.slot: s for s in scores}
     ranked = sorted(scores, key=lambda s: s.total, reverse=True)
 
     # A card earns a pick on its own merit if it is a must-claim (a top
@@ -147,7 +148,33 @@ def decide(cards: list[Card], policy: Policy, watchlist: dict[str, float] | None
             )
         return Decision(Action.CLAIM, [s.slot], scores, reasons)
 
-    # --- nothing stands out; fall back to the best card above the floor ---
+    # --- nothing stands out; take the best numbered card anyway ------------
+    #
+    # Ordered the way the owner ranks them: any readable print beats an
+    # unreadable one (a number we read is known, one we did not could be
+    # anything), and both beat an E, which has no number by definition.
+    if policy.claim_best_numbered:
+        numbered = [c for c in cards if not c.no_number]
+        if numbered:
+            # _trusted_print, not print_no: a shaky read is not a low print.
+            # A lone digit is usually the hook icon beside the badge, so
+            # ranking on the raw value would let a misread "#1" beat a real
+            # #9999 -- the exact failure the trust gate exists to stop.
+            pick = min(numbered, key=lambda c: (_trusted_print(c) is None,
+                                                _trusted_print(c) or 0,
+                                                c.slot))
+            s = by_slot_score[pick.slot]
+            reasons = [f"slot {pick.slot}: {pick.label()} -> {s.total:.1f}",
+                       "claimed: best numbered card in the spawn -- "
+                       "a number always beats an E"]
+            others = [c for c in cards if c.slot != pick.slot]
+            if others:
+                reasons.append("passed on " + ", ".join(
+                    f"slot {c.slot} {c.label()}" for c in others))
+            return Decision(Action.CLAIM, [pick.slot], scores, reasons)
+        return Decision(Action.SKIP, [], scores,
+                        ["every card is an E -- nothing to choose between them"])
+
     best = ranked[0]
     best_card = by_slot[best.slot]
     if best.total >= policy.min_claim_score:

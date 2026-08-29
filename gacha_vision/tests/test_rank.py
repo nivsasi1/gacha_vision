@@ -117,8 +117,10 @@ def test_boundary_twenty_is_inclusive():
     assert d.action is Action.CLAIM_BOTH
 
 
-def test_boundary_twentyone_is_not():
-    d = decide([card(1, 21), card(2, 21)], P, {})
+def test_boundary_two_hundred_and_one_is_not():
+    """The take-both bar is 200: two cards must BOTH clear it to spend the
+    second pick, and 201 does not."""
+    d = decide([card(1, 201), card(2, 201)], P, {})
     assert d.action is not Action.CLAIM_BOTH
 
 
@@ -158,10 +160,16 @@ def test_an_unfamiliar_frame_is_always_claimed():
     assert d.action is Action.CLAIM and d.slots == [1]
 
 
-def test_a_lone_card_is_always_claimed():
-    """A spawn with one card has nothing to weigh it against."""
-    for c in (card(1, 9999), card(1, no_number=True)):
-        assert decide([c], P, {}).action is Action.CLAIM
+def test_a_lone_numbered_card_is_always_claimed():
+    """Nothing to weigh it against, and passing costs the drop outright."""
+    assert decide([card(1, 9999)], P, {}).action is Action.CLAIM
+
+
+def test_a_lone_e_card_is_not_claimed():
+    """An E is junk whether or not it has company. An all-E spawn comes back
+    empty on purpose, so a human picks rather than the reader inventing a
+    preference it does not have."""
+    assert decide([card(1, no_number=True)], P, {}).action is Action.SKIP
 
 
 def test_frame_breaks_a_print_tie():
@@ -217,10 +225,18 @@ def test_print_one_is_always_claimed():
 
 # --- skip ---------------------------------------------------------------
 
-def test_junk_spawn_is_skipped():
-    cards = [card(1, 4200), card(2, no_number=True)]
-    d = decide(cards, P, {})
+def test_a_bad_print_still_beats_an_e():
+    """#4200 is a bad card. It is not an E, and a claim not spent is lost, so
+    it is taken rather than passing on the spawn."""
+    d = decide([card(1, 4200), card(2, no_number=True)], P, {})
+    assert d.action is Action.CLAIM
+    assert d.slots == [1]
+
+
+def test_only_an_all_e_spawn_is_skipped():
+    d = decide([card(1, no_number=True), card(2, no_number=True)], P, {})
     assert d.action is Action.SKIP
+    assert d.slots == []
     assert d.slots == []
 
 
