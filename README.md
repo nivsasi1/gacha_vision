@@ -134,16 +134,48 @@ That is **23 ms per spawn against 2238 ms** for the full diagnostic path, and
 it was verified not to cost accuracy — 91/91 spawns still match the labels.
 Use `analyze_spawn` when you want the diagnostics instead of the speed.
 
-From another language, shell out to the CLI:
+### From another language
+
+Keep one process alive and talk to it. Spawning an interpreter per spawn
+costs ~0.8s of startup before any work happens, which is most of the budget
+for reacting to a live drop.
 
 ```bash
-python -m gacha_vision analyze shot.png --expected 2 --json
+python -u -m gacha_vision.worker     # or: python -u tools/worker.py
 ```
 
-`.decision.slots` in that JSON is the same list `pick` returns. Note the CLI
-pays ~0.8s of interpreter startup per call; for anything latency-sensitive,
-keep one Python process alive and call `pick` in a loop rather than spawning
-a process per spawn.
+Newline-delimited JSON both ways, one reply per request, so a caller can
+pipeline. It prints `{"ready": true}` once loaded — wait for that line, then
+answers come in ~35 ms.
+
+```
+->  {"ping": true}
+<-  {"pong": true}
+
+->  {"image": "<base64>", "expected": 2}
+<-  {"slots": [2], "cards": [
+      {"slot": 1, "printNo": 37,   "frame": "normal"},
+      {"slot": 2, "printNo": null, "frame": "e"}
+    ]}
+```
+
+`slots` is the answer. `cards` is what the reader saw getting there — free,
+since they are read inside `pick` either way. Two things matter on the far
+side:
+
+* `printNo` is null for an `E` **and** for a numbered card whose badge could
+  not be read. `frame` is what tells those apart.
+* `frame` is `"normal"`, `"e"`, `"other"` or `"unknown"`. `"other"` is a
+  border matching neither known frame — claimed on sight whatever its print,
+  so it explains a claim the number alone would not.
+
+Errors come back as `{"error": "..."}`, never as an empty `slots`: "nothing
+worth claiming" and "the image was broken" must not look the same. A bad
+request is answered, not fatal; the worker exits only when stdin closes.
+
+For a one-off, the CLI still works — `python -m gacha_vision analyze shot.png
+--expected 2 --json`, where `.decision.slots` is the same list — but it pays
+that 0.8s every call.
 
 ## How it works
 
